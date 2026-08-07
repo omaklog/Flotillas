@@ -1,0 +1,20 @@
+node_modules
+.nuxt
+.output
+.data
+dist
+public
+
+# Generado con esbuild (yarn build:cookie-shim), no código propio.
+shims/cookie-bundled.mjs
+
+# Generado localmente por `supabase start` (edge runtime), no versionado.
+supabase/.temp
+
+# Documentación de spec-kit y del proyecto: no es código, no se formatea.
+.specify
+specs
+docs
+CLAUDE.md
+README.md
+*.md

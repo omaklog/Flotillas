@@ -1,0 +1,9 @@
+# Playwright — no cubierto por el .gitignore del repo padre.
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+tests/e2e/.auth/
+
+# Generado localmente por `supabase start`.
+supabase/.temp/

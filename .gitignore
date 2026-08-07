@@ -1,4 +1,29 @@
-# Playwright — no cubierto por el .gitignore del repo padre.
+# Nuxt dev/build outputs
+.output
+.data
+.nuxt
+.nitro
+.cache
+dist
+
+# Node dependencies
+node_modules
+
+# Logs
+logs
+*.log
+
+# Misc
+.DS_Store
+.idea
+.fleet
+
+# Local env files
+.env
+.env.*
+!.env.example
+
+# Playwright
 test-results/
 playwright-report/
 blob-report/

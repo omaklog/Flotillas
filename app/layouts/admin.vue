@@ -1,0 +1,30 @@
+<template>
+  <div>
+    <!-- `color="sidebar"` (#1a1f26, docs/design-system.md → "Sidebar"), no `primary`: es una
+    variante casi negra distinta del navy de marca, confirmada contra las capturas reales de
+    Stitch. Vuetify usa `on-sidebar` (blanco) como color de texto automáticamente. NO agregar
+    `theme="dark"` — este proyecto solo define un tema `light`, así que `theme="dark"` cae al
+    tema oscuro POR DEFECTO de Vuetify (un azul genérico ajeno a la marca), no a una variante
+    oscura de nuestros propios tokens. -->
+    <v-navigation-drawer permanent color="sidebar" class="app-drawer-shadow">
+      <v-list-item title="Flotillas" subtitle="Administrador" class="text-page-title-mobile" />
+      <v-divider />
+      <v-list nav>
+        <v-list-item to="/admin/usuarios" prepend-icon="mdi-account-group" title="Usuarios" />
+        <v-list-item to="/admin/configuracion" prepend-icon="mdi-cog" title="Configuración" />
+      </v-list>
+    </v-navigation-drawer>
+
+    <v-app-bar flat class="app-bar-glass">
+      <v-app-bar-title class="text-section-title">Panel de Administrador</v-app-bar-title>
+      <v-spacer />
+      <AppMenuPerfil />
+    </v-app-bar>
+
+    <v-main class="bg-background">
+      <v-container fluid>
+        <slot />
+      </v-container>
+    </v-main>
+  </div>
+</template>

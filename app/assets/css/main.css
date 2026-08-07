@@ -1,0 +1,131 @@
+@import '@fontsource-variable/inter';
+
+/* Tipografía extraída de docs/design-system.md — escala "Precision Fleet Systems". */
+:root {
+  --ff-page-title: 600 28px/36px 'Inter Variable', sans-serif;
+  --ff-page-title-mobile: 600 22px/28px 'Inter Variable', sans-serif;
+  --ff-section-title: 500 18px/28px 'Inter Variable', sans-serif;
+  --ff-body-main: 400 16px/24px 'Inter Variable', sans-serif;
+  --ff-metadata: 400 14px/20px 'Inter Variable', sans-serif;
+  --ff-label-caps: 600 12px/16px 'Inter Variable', sans-serif;
+}
+
+.text-page-title {
+  font: var(--ff-page-title);
+  letter-spacing: -0.02em;
+}
+
+.text-section-title {
+  font: var(--ff-section-title);
+  letter-spacing: -0.01em;
+}
+
+.text-body-main {
+  font: var(--ff-body-main);
+}
+
+.text-metadata {
+  font: var(--ff-metadata);
+}
+
+.text-label-caps {
+  font: var(--ff-label-caps);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* T083 (WCAG 2.1 AA, 2.4.7 Focus Visible): verificado con teclado real que los `v-btn` de
+   Vuetify solo dan un cambio de color muy sutil al enfocarse (fácil de no percibir) y los
+   enlaces normales (<a>) no dan ninguna señal — los campos de texto sí tienen una señal clara
+   (Vuetify cambia el borde), así que no se tocan. `:focus-visible` (no `:focus`) para que esto
+   no aparezca en clics de mouse, solo en navegación real por teclado. */
+a:focus-visible,
+button:focus-visible,
+.v-btn:focus-visible {
+  outline: 2px solid #0b61a1;
+  outline-offset: 2px;
+}
+
+/* Tarjeta estándar — Level 1 de docs/design-system.md § "Elevation & Depth": blanco 90%
+   opacidad + blur 8px (glassmorphism) + borde 1px `#e2e8f0` + sombra. En hover/activo, Level 2
+   ("Lifted state"): la sombra crece de `0 2px 8px` a `0 4px 12px`. El radio NO se fija aquí:
+   `rounded: 'lg'` (0.5rem = 8px) ya es el default de VCard en vuetify.config.ts y coincide con
+   "Containers: paneles grandes usan 8px" del doc — fijarlo aquí lo duplicaría. Usar junto con
+   `variant="flat"` en el <v-card> para que no compita con el borde de `variant="outlined"` ni
+   la elevación por defecto de `variant="elevated"`. `!important` es deliberado: sin él, la
+   especificidad de las clases `.v-card--variant-*` de Vuetify puede ganar según el orden real
+   de carga del CSS. */
+.app-card-shadow {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.06) !important;
+  transition: box-shadow 180ms ease;
+}
+
+.app-card-shadow:hover {
+  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.08) !important;
+}
+
+/* Modales/overlays — Level 3 del mismo documento: sombra más profunda que una tarjeta normal
+   para comunicar que flota por encima de todo lo demás. Mismo glassmorphism + borde que
+   `.app-card-shadow`, solo cambia el box-shadow. */
+.app-modal-shadow {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12) !important;
+}
+
+/* Separa el navigation drawer del contenido con sombra lateral en vez de (o además de) el
+   borde por defecto de Vuetify. */
+.app-drawer-shadow {
+  border-inline-end: none !important;
+  box-shadow: 2px 0 8px rgba(16, 24, 40, 0.06) !important;
+}
+
+/* App-bar translúcida con blur, en vez de fondo sólido opaco. */
+.app-bar-glass {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 8px rgba(16, 24, 40, 0.06) !important;
+}
+
+/* Dropzone de logo (docs/design-references/screens/configuracion-empresa.png) — outline-variant
+   (#c4c6d0) y surface-container-low (#f3f4f5) son los mismos tokens de vuetify.config.ts, no
+   valores inventados. `role="button"` + `tabindex="0"` en el markup, así que necesita su propio
+   :focus-visible (el selector global no cubre divs arbitrarios con ese rol). */
+.logo-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  border: 2px dashed #c4c6d0;
+  border-radius: 8px;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+}
+
+.logo-dropzone:hover {
+  background: #f3f4f5;
+  border-color: #0b61a1;
+}
+
+.logo-dropzone:focus-visible {
+  outline: 2px solid #0b61a1;
+  outline-offset: 2px;
+  border-color: #0b61a1;
+}
+
+.logo-dropzone__preview {
+  max-height: 96px;
+  max-width: 100%;
+  object-fit: contain;
+}

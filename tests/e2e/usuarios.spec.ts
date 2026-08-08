@@ -346,6 +346,7 @@ test.describe('US9 — Administrador gestiona operarios existentes', () => {
         empresa_id: empresaId,
         marca: 'Marca T073',
         modelo: 'Modelo T073',
+        placa: `T073-${Date.now()}`,
         tipo_vehiculo_id: tipoVehiculo!.id
       })
       .select('id')

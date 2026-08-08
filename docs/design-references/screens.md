@@ -23,6 +23,9 @@ Sigue el mismo lenguaje visual descrito en `../design-system.md`.
 | Configuración de la Empresa | Configuración (US4, `admin/configuracion.vue`) | `screens/configuracion-empresa.png` | `0b536648558c49b69713fe6bf6aaf3cc` |
 | Administración de Catálogos | Catálogos Base (002, hub — referencia de patrón, no de contenido literal) | `screens/administracion-catalogos.png` | `4ef14f0eca2f46cfa61629f1c2c8aec5` |
 | Detalle de Catálogo: Marcas y Modelos | Catálogos Base (002, `admin/tipos-vehiculo`, `admin/aseguradoras`, `admin/permisos` — molde de tabla+búsqueda+acciones) | `screens/detalle-catalogo-marcas-modelos.png` | `4c90c0d8d1ed4f03815a8d15257dbec1` |
+| Listado de Flotilla de Vehículos | Vehículos (003, `admin/vehiculos/index.vue`) | `screens/listado-flotilla-vehiculos-v2.png` | `c3baa74b234d4bec8de37408d9cc1a33` |
+| Gestión de Vehículo: Alta y Edición | Vehículos (003, `admin/vehiculos/nuevo.vue` y `[id].vue`, pestaña de datos — referencia de patrón, no literal) | `screens/gestion-vehiculo-alta-edicion.png` | `fd9fb918cd9e4c8094c7153c47d8d4f5` |
+| Detalle de Vehículo: Datos Generales | Vehículos (003, `admin/vehiculos/[id].vue`) | `screens/detalle-vehiculo-datos-generales.png` | `94fd194837ed400598c50cbed163aab0` |
 
 Las 3 anteriores a estas 2 últimas se descargaron el 2026-08-07, vía el workaround de `curl`
 directo documentado en `../../CLAUDE.md` § "Design system compliance" (el MCP de Stitch tenía
@@ -35,5 +38,18 @@ como referencia de **patrón** (breadcrumb, encabezado + botón "+ Nuevo", busca
 tabla con columna de Acciones con editar/eliminar, paginación), no de contenido literal — cada
 pantalla real (`tipos-vehiculo`, `aseguradoras`, `permisos`) adapta las columnas a sus propios
 campos (`data-model.md`) y omite el filtro de estado.
+
+Las 3 últimas (`listado-flotilla-vehiculos-v2.png`, `gestion-vehiculo-alta-edicion.png`,
+`detalle-vehiculo-datos-generales.png`) se generaron y descargaron el 2026-08-08 para Feature 003
+(Vehículos), directo en la UI de Stitch por el usuario. **Adaptaciones deliberadas respecto al
+mockup, no discrepancias por descuido**: (1) el mockup separa "Datos Generales" y "Seguro y
+Póliza" en 2 pestañas distintas dentro del formulario de alta/edición — se combinan en una sola
+pestaña "Datos" en la implementación real, porque nuestro formulario es más chico (sin VIN, sin
+specs de transmisión/combustible que no existen en el schema de esta feature) y no justifica el
+paso adicional; (2) el listado del mockup muestra filtros por categoría (Camiones/Vans/Ligeros) y
+una columna "Próx. Mantenimiento" — fuera de alcance (Mantenimiento 004 no existe todavía); se
+usa en cambio el badge de vigencia de póliza ya visto en `listado-flotilla.png`; (3) el detalle
+del mockup incluye pestañas/tarjetas de "Conductor Asignado" y "Mantenimiento" — tampoco existen
+todavía (Conductores, Mantenimiento); se omiten hasta que esas features se construyan.
 
 Proyecto de origen en Stitch: `projects/4499192746969655413` ("FleetControl Enterprise").

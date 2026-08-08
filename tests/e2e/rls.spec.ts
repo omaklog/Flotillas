@@ -338,4 +338,192 @@ test.describe('RLS — casos negativos (constitución §4)', () => {
       .select()
     expect(eliminado).toEqual([])
   })
+
+  // Feature 003 (Vehículos) — T046: mismo criterio que las 3 pruebas de arriba, consolidado en
+  // una sola porque `vehiculos_write`/`vehiculo_permisos_write` gatean TODAS las operaciones de
+  // escritura (crear/editar/baja/reactivar/eliminar/permisos asignados) tras un único chequeo de
+  // `tiene_permiso('vehiculos','editar')` — no hay una política por acción que probar por
+  // separado (research.md R1 de 003-vehiculos). quickstart.md Escenario 7.
+  test('vehiculos: un operario con solo "ver" no puede crear, editar, dar de baja, reactivar ni eliminar vehículos, ni gestionar sus permisos asignados (US1-US6, FR-015)', async () => {
+    const admin = adminSupabaseClient()
+    const operario = await clienteAutenticado('operario-e2e@flotillas.local')
+    const {
+      data: { user }
+    } = await operario.auth.getUser()
+    const { data: perfil } = await operario
+      .from('usuarios')
+      .select('id, empresa_id')
+      .eq('auth_user_id', user!.id)
+      .single()
+    const { data: tipo } = await operario
+      .from('tipos_vehiculo')
+      .select('id')
+      .eq('empresa_id', perfil!.empresa_id!)
+      .eq('clave', 'ligero')
+      .single()
+
+    // Crear: bloqueado.
+    const { error: insertError } = await operario.from('vehiculos').insert({
+      empresa_id: perfil!.empresa_id!,
+      marca: 'Intento Operario T046',
+      modelo: 'X',
+      placa: `RLS-T046-${Date.now()}`,
+      tipo_vehiculo_id: tipo!.id
+    })
+    expect(insertError).not.toBeNull()
+    expect(insertError!.message).toMatch(/row-level security/i)
+
+    // El operario sí puede leer (tiene 'ver') un vehículo sembrado por el admin.
+    const { data: vehiculo } = await admin
+      .from('vehiculos')
+      .insert({
+        empresa_id: perfil!.empresa_id!,
+        marca: 'Vehículo RLS T046',
+        modelo: 'X',
+        placa: `RLS-T046-SEED-${Date.now()}`,
+        tipo_vehiculo_id: tipo!.id
+      })
+      .select('id')
+      .single()
+    const { data: leido } = await operario.from('vehiculos').select('id').eq('id', vehiculo!.id).single()
+    expect(leido!.id).toBe(vehiculo!.id)
+
+    // Editar: bloqueado.
+    const { data: editado } = await operario
+      .from('vehiculos')
+      .update({ modelo: 'Hackeado' })
+      .eq('id', vehiculo!.id)
+      .select()
+    expect(editado).toEqual([])
+
+    // Dar de baja: bloqueado (es un UPDATE de baja/motivo_baja, misma política).
+    const { data: dadoDeBaja } = await operario
+      .from('vehiculos')
+      .update({ baja: true, motivo_baja: 'Intento operario' })
+      .eq('id', vehiculo!.id)
+      .select()
+    expect(dadoDeBaja).toEqual([])
+
+    // Reactivar: bloqueado (sembrado ya-de-baja por el admin, el operario intenta reactivar).
+    await admin.from('vehiculos').update({ baja: true, motivo_baja: 'Sembrado por T046' }).eq('id', vehiculo!.id)
+    const { data: reactivado } = await operario
+      .from('vehiculos')
+      .update({ baja: false })
+      .eq('id', vehiculo!.id)
+      .select()
+    expect(reactivado).toEqual([])
+
+    // Eliminar: bloqueado.
+    const { data: eliminado } = await operario.from('vehiculos').delete().eq('id', vehiculo!.id).select()
+    expect(eliminado).toEqual([])
+
+    // Permisos asignados al vehículo: crear/editar/quitar, todos bloqueados.
+    const { data: permiso } = await admin
+      .from('permisos')
+      .insert({
+        empresa_id: perfil!.empresa_id!,
+        clave: `rls_t046_${Date.now()}`,
+        nombre: 'Permiso RLS T046',
+        tipo: 'estatal'
+      })
+      .select('id')
+      .single()
+    const { error: asignarError } = await operario.from('vehiculo_permisos').insert({
+      empresa_id: perfil!.empresa_id!,
+      vehiculo_id: vehiculo!.id,
+      permiso_id: permiso!.id
+    })
+    expect(asignarError).not.toBeNull()
+    expect(asignarError!.message).toMatch(/row-level security/i)
+
+    const { data: asignacion } = await admin
+      .from('vehiculo_permisos')
+      .insert({ empresa_id: perfil!.empresa_id!, vehiculo_id: vehiculo!.id, permiso_id: permiso!.id })
+      .select('id')
+      .single()
+    const { data: vencimientoEditado } = await operario
+      .from('vehiculo_permisos')
+      .update({ fecha_vencimiento: '2030-01-01' })
+      .eq('id', asignacion!.id)
+      .select()
+    expect(vencimientoEditado).toEqual([])
+
+    const { data: asignacionQuitada } = await operario
+      .from('vehiculo_permisos')
+      .delete()
+      .eq('id', asignacion!.id)
+      .select()
+    expect(asignacionQuitada).toEqual([])
+
+    // Control positivo del negativo anterior: sigue existiendo, sin cambios.
+    const { data: siguIgual } = await admin
+      .from('vehiculos')
+      .select('marca, baja')
+      .eq('id', vehiculo!.id)
+      .single()
+    expect(siguIgual!.marca).toBe('Vehículo RLS T046')
+    expect(siguIgual!.baja).toBe(true)
+  })
+
+  // T047 (003-vehiculos, SC-007): aislamiento del bucket `documentos` por empresa. A diferencia
+  // de las tablas normales (donde el filtro de empresa vive en la fila), aquí vive en el propio
+  // nombre del objeto (`storage.foldername(name)`) — se prueba por separado porque ejercita la
+  // política de `storage.objects`, no la de `public.vehiculos`.
+  test('documentos: un administrador de una empresa no puede generar una URL firmada válida ni listar la carpeta de otra empresa (SC-007)', async ({
+    request
+  }) => {
+    const rfc = `T${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).toUpperCase().slice(2, 6)}`
+    const correoAdminAjeno = `admin-rls-storage-${Date.now()}@flotillas.local`
+    const altaRespuesta = await request.post('/api/empresas', {
+      data: {
+        empresa: {
+          nombre: 'Empresa Ajena RLS Storage',
+          rfc,
+          pais: 'México',
+          moneda: 'MXN',
+          unidad_distancia: 'km',
+          unidad_combustible: 'litros'
+        },
+        administrador: { nombre: 'Admin Ajeno Storage', correo: correoAdminAjeno }
+      }
+    })
+    expect(altaRespuesta.status()).toBe(201)
+    const { empresa_id: empresaAjenaId } = await altaRespuesta.json()
+
+    const admin = adminSupabaseClient()
+    const { data: tipoAjeno } = await admin
+      .from('tipos_vehiculo')
+      .select('id')
+      .eq('empresa_id', empresaAjenaId)
+      .eq('clave', 'ligero')
+      .single()
+    const { data: vehiculoAjeno } = await admin
+      .from('vehiculos')
+      .insert({
+        empresa_id: empresaAjenaId,
+        marca: 'Vehículo Ajeno T047',
+        modelo: 'X',
+        placa: `RLS-T047-${Date.now()}`,
+        tipo_vehiculo_id: tipoAjeno!.id
+      })
+      .select('id')
+      .single()
+    const rutaAjena = `poliza/${empresaAjenaId}/${vehiculoAjeno!.id}/seed.pdf`
+    const { error: errSubida } = await admin.storage
+      .from('documentos')
+      .upload(rutaAjena, Buffer.from('%PDF-1.4 documento de otra empresa'), {
+        contentType: 'application/pdf'
+      })
+    expect(errSubida).toBeNull()
+
+    const adminPropio = await clienteAutenticado('admin-e2e@flotillas.local')
+
+    const { error: errFirma } = await adminPropio.storage.from('documentos').createSignedUrl(rutaAjena, 60)
+    expect(errFirma).not.toBeNull()
+
+    const { data: listado } = await adminPropio.storage
+      .from('documentos')
+      .list(`poliza/${empresaAjenaId}/${vehiculoAjeno!.id}`)
+    expect(listado ?? []).toEqual([])
+  })
 })

@@ -30,6 +30,10 @@ function pdfDePrueba(nombre = 'poliza.pdf') {
   return { name: nombre, mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 contenido de prueba') }
 }
 
+function fotoDePrueba(nombre = 'foto.jpg') {
+  return { name: nombre, mimeType: 'image/jpeg', buffer: Buffer.from('contenido de foto de prueba') }
+}
+
 function fechaEnDias(dias: number): string {
   const fecha = new Date()
   fecha.setDate(fecha.getDate() + dias)
@@ -77,6 +81,36 @@ async function sembrarVersionPoliza(
     .insert({
       empresa_id: opciones.empresaId,
       tipo: 'poliza',
+      storage_path: ruta,
+      entidad_tipo: 'vehiculo',
+      entidad_id: opciones.vehiculoId,
+      subido_por: opciones.subidoPor
+    })
+    .select('id')
+    .single()
+  return { id: archivo!.id, storagePath: ruta }
+}
+
+/** Igual que `sembrarVersionPoliza`, pero `tipo: 'foto'` — la foto NO tiene historial, así que
+ * quien llama a esto además debe actualizar `vehiculos.foto_archivo_id` si quiere que sea "la
+ * vigente" (a diferencia de la póliza, aquí normalmente solo hay una fila a la vez). */
+async function sembrarVersionFoto(
+  admin: ReturnType<typeof adminSupabaseClient>,
+  opciones: { empresaId: string; vehiculoId: string; subidoPor: string; nombreArchivo: string }
+) {
+  const ruta = `foto/${opciones.empresaId}/${opciones.vehiculoId}/${opciones.nombreArchivo}`
+  const { error: errSubida } = await admin.storage
+    .from('documentos')
+    .upload(ruta, Buffer.from(`foto de prueba ${opciones.nombreArchivo}`), {
+      contentType: 'image/jpeg'
+    })
+  if (errSubida) throw errSubida
+
+  const { data: archivo } = await admin
+    .from('archivos')
+    .insert({
+      empresa_id: opciones.empresaId,
+      tipo: 'foto',
       storage_path: ruta,
       entidad_tipo: 'vehiculo',
       entidad_id: opciones.vehiculoId,
@@ -355,7 +389,7 @@ test.describe('US3 — Administrador edita un vehículo y gestiona el historial 
     const nuevoModelo = `Daily Max ${sufijo}`
     const nuevaPoliza = `POL-${sufijo}`
 
-    await page.goto(`/admin/vehiculos/${vehiculo!.id}`)
+    await page.goto(`/admin/vehiculos/${vehiculo!.id}/editar`)
     await esperarHidratacion(page)
     await page.getByLabel('Modelo', { exact: true }).fill(nuevoModelo)
     await page.getByLabel('Número de póliza', { exact: true }).fill(nuevaPoliza)
@@ -410,7 +444,7 @@ test.describe('US3 — Administrador edita un vehículo y gestiona el historial 
     })
     await admin.from('vehiculos').update({ poliza_archivo_id: v1.id }).eq('id', vehiculo!.id)
 
-    await page.goto(`/admin/vehiculos/${vehiculo!.id}`)
+    await page.goto(`/admin/vehiculos/${vehiculo!.id}/editar`)
     await esperarHidratacion(page)
     await page.getByTestId('poliza-input').setInputFiles(pdfDePrueba('reemplazo.pdf'))
     await page.getByTestId('submit-btn').click()
@@ -924,5 +958,230 @@ test.describe('US6 — Administrador asigna los permisos aplicables a un vehícu
       .eq('id', permisoId)
       .maybeSingle()
     expect(permisoAun).not.toBeNull()
+  })
+})
+
+test.describe('US7 — Administrador consulta el detalle de un vehículo sin entrar a edición', () => {
+  test.use({ storageState: 'tests/e2e/.auth/admin.json' })
+
+  async function sembrarVehiculo(prefijo: string) {
+    const { admin, empresaId, tipoVehiculoId } = await empresaYTipoAdmin()
+    const sufijo = Date.now()
+    const marca = `Isuzu ${prefijo} ${sufijo}`
+    const { data: vehiculo } = await admin
+      .from('vehiculos')
+      .insert({
+        empresa_id: empresaId,
+        marca,
+        modelo: 'NPR',
+        placa: `${prefijo}-${sufijo}`,
+        tipo_vehiculo_id: tipoVehiculoId
+      })
+      .select('id')
+      .single()
+    return { vehiculoId: vehiculo!.id as string, marca }
+  }
+
+  test('T050: abrir un vehículo desde el listado muestra su detalle en modo solo lectura', async ({
+    page
+  }) => {
+    const { vehiculoId, marca } = await sembrarVehiculo('T050')
+
+    await page.goto(`/admin/vehiculos/${vehiculoId}`)
+    await esperarHidratacion(page)
+
+    await expect(page.getByTestId('datos-vehiculo').getByText(marca)).toBeVisible()
+    await expect(page.getByTestId('editar-btn')).toBeVisible()
+    // Modo solo lectura: ni el botón de envío del formulario ni sus campos editables existen.
+    await expect(page.getByTestId('submit-btn')).toHaveCount(0)
+    await expect(page.getByLabel('Marca', { exact: true })).toHaveCount(0)
+  })
+
+  test('T051: la acción "Editar" desde el detalle navega al formulario con los datos precargados', async ({
+    page
+  }) => {
+    const { vehiculoId, marca } = await sembrarVehiculo('T051')
+
+    await page.goto(`/admin/vehiculos/${vehiculoId}`)
+    await esperarHidratacion(page)
+    await page.getByTestId('editar-btn').click()
+
+    await page.waitForURL((url) => url.pathname === `/admin/vehiculos/${vehiculoId}/editar`)
+    await esperarHidratacion(page)
+    await expect(page.getByLabel('Marca', { exact: true })).toHaveValue(marca)
+    await expect(page.getByTestId('submit-btn')).toBeVisible()
+  })
+
+  test('T052: guardar cambios en el formulario regresa a la vista de detalle mostrando los datos actualizados', async ({
+    page
+  }) => {
+    const { vehiculoId } = await sembrarVehiculo('T052')
+    const nuevoModelo = `NPR Actualizado ${Date.now()}`
+
+    await page.goto(`/admin/vehiculos/${vehiculoId}/editar`)
+    await esperarHidratacion(page)
+    await page.getByLabel('Modelo', { exact: true }).fill(nuevoModelo)
+    await page.getByTestId('submit-btn').click()
+
+    await page.waitForURL((url) => url.pathname === `/admin/vehiculos/${vehiculoId}`)
+    await esperarHidratacion(page)
+    await expect(page.getByTestId('datos-vehiculo').getByText(nuevoModelo)).toBeVisible()
+    await expect(page.getByTestId('submit-btn')).toHaveCount(0)
+  })
+})
+
+test.describe('Foto del vehículo (FR-023 a FR-025)', () => {
+  test.use({ storageState: 'tests/e2e/.auth/admin.json' })
+
+  async function sembrarVehiculo(prefijo: string) {
+    const { admin, empresaId, tipoVehiculoId, adminId } = await empresaYTipoAdmin()
+    const sufijo = Date.now()
+    const { data: vehiculo } = await admin
+      .from('vehiculos')
+      .insert({
+        empresa_id: empresaId,
+        marca: `Kenworth ${prefijo} ${sufijo}`,
+        modelo: 'T880',
+        placa: `${prefijo}-${sufijo}`,
+        tipo_vehiculo_id: tipoVehiculoId
+      })
+      .select('id')
+      .single()
+    return { admin, empresaId, adminId, vehiculoId: vehiculo!.id as string }
+  }
+
+  test('T057: adjuntar una foto durante el alta la deja visible en el detalle del vehículo', async ({
+    page
+  }) => {
+    const marca = `Volvo T057 ${Date.now()}`
+    const placa = `T057-${Date.now()}`
+
+    await page.goto('/admin/vehiculos/nuevo')
+    await esperarHidratacion(page)
+    await page.getByLabel('Marca', { exact: true }).fill(marca)
+    await page.getByLabel('Modelo', { exact: true }).fill('FH16')
+    await page.getByLabel('Placa', { exact: true }).fill(placa)
+    await page.getByRole('combobox', { name: 'Tipo de vehículo' }).fill('Vehículo ligero')
+    await page.getByRole('option', { name: 'Vehículo ligero', exact: true }).click()
+    await page.getByTestId('foto-input').setInputFiles(fotoDePrueba())
+    await page.getByTestId('submit-btn').click()
+
+    await page.waitForURL((url) => url.pathname === '/admin/vehiculos', { timeout: 10_000 })
+
+    const admin = adminSupabaseClient()
+    await expect
+      .poll(
+        async () => {
+          const { data } = await admin
+            .from('vehiculos')
+            .select('foto_archivo_id')
+            .eq('placa', placa)
+            .single()
+          return data?.foto_archivo_id ?? null
+        },
+        { timeout: 10_000 }
+      )
+      .not.toBeNull()
+
+    const { data: vehiculo } = await admin
+      .from('vehiculos')
+      .select('id, foto_archivo_id')
+      .eq('placa', placa)
+      .single()
+    expect(vehiculo!.foto_archivo_id).not.toBeNull()
+
+    await page.goto(`/admin/vehiculos/${vehiculo!.id}`)
+    await esperarHidratacion(page)
+    await expect(page.getByTestId('foto-vehiculo')).toBeVisible()
+  })
+
+  test('T058: reemplazar la foto de un vehículo deja la nueva visible y elimina la anterior', async ({
+    page
+  }) => {
+    const { admin, vehiculoId, adminId, empresaId } = await sembrarVehiculo('T058')
+    const v1 = await sembrarVersionFoto(admin, {
+      empresaId,
+      vehiculoId,
+      subidoPor: adminId,
+      nombreArchivo: 'seed-v1.jpg'
+    })
+    await admin.from('vehiculos').update({ foto_archivo_id: v1.id }).eq('id', vehiculoId)
+
+    await page.goto(`/admin/vehiculos/${vehiculoId}/editar`)
+    await esperarHidratacion(page)
+    await page.getByTestId('foto-input').setInputFiles(fotoDePrueba('reemplazo.jpg'))
+    await page.getByTestId('submit-btn').click()
+
+    await expect
+      .poll(
+        async () => {
+          const { data } = await admin
+            .from('vehiculos')
+            .select('foto_archivo_id')
+            .eq('id', vehiculoId)
+            .single()
+          return data?.foto_archivo_id
+        },
+        { timeout: 10_000 }
+      )
+      .not.toBe(v1.id)
+
+    const { data: archivoV1Aun } = await admin
+      .from('archivos')
+      .select('id')
+      .eq('id', v1.id)
+      .maybeSingle()
+    expect(archivoV1Aun).toBeNull()
+  })
+
+  test('T059: un archivo de foto con tipo o tamaño inválido se rechaza antes de subirse', async ({
+    page
+  }) => {
+    await page.goto('/admin/vehiculos/nuevo')
+    await esperarHidratacion(page)
+    await page.getByTestId('foto-input').setInputFiles(pdfDePrueba('no-es-foto.pdf'))
+
+    await expect(page.getByText(/la foto debe ser jpg o png/i)).toBeVisible()
+    await expect(page.getByLabel('Marca', { exact: true })).toBeEditable()
+  })
+
+  test('T060: si la subida de una foto nueva falla durante un reemplazo, la foto anterior sigue siendo la vigente', async ({
+    page
+  }) => {
+    const { admin, vehiculoId, adminId, empresaId } = await sembrarVehiculo('T060')
+    const v1 = await sembrarVersionFoto(admin, {
+      empresaId,
+      vehiculoId,
+      subidoPor: adminId,
+      nombreArchivo: 'seed-v1.jpg'
+    })
+    await admin.from('vehiculos').update({ foto_archivo_id: v1.id }).eq('id', vehiculoId)
+
+    await page.route('**/storage/v1/object/documentos/foto/**', (route) =>
+      route.fulfill({ status: 500, body: 'Fallo simulado de subida de foto (T060)' })
+    )
+
+    await page.goto(`/admin/vehiculos/${vehiculoId}/editar`)
+    await esperarHidratacion(page)
+    await page.getByTestId('foto-input').setInputFiles(fotoDePrueba('nueva.jpg'))
+    await page.getByTestId('submit-btn').click()
+
+    await page.waitForURL((url) => url.pathname === `/admin/vehiculos/${vehiculoId}`, {
+      timeout: 10_000
+    })
+
+    const { data: vehiculo } = await admin
+      .from('vehiculos')
+      .select('foto_archivo_id')
+      .eq('id', vehiculoId)
+      .single()
+    expect(vehiculo!.foto_archivo_id).toBe(v1.id)
+
+    const { data: archivoV1Aun } = await admin
+      .from('archivos')
+      .select('id')
+      .eq('id', v1.id)
+      .maybeSingle()
+    expect(archivoV1Aun).not.toBeNull()
   })
 })

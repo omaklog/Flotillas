@@ -97,6 +97,24 @@ para eso está `tasks.md` (siguiente comando: `/speckit-tasks`).
    `insert`/`update`/`delete` contra `vehiculos`, `vehiculo_permisos` o un intento de subida a
    `documentos/poliza/{empresa_id}/...` son rechazados por RLS — no un éxito silencioso.
 
+## Escenario 8 — Detalle de solo lectura y foto del vehículo (US-3.7, FR-022 a FR-025)
+
+> Agregado en la ronda de `/speckit-clarify` del 2026-08-08, posterior a los Escenarios 1-7 —
+> requiere las Fases 10-11 de `tasks.md` (T050-T064), todavía no implementadas al momento de
+> escribir esto.
+
+1. Desde el listado, hacer clic en un vehículo.
+2. **Esperado**: se abre en modo solo lectura — ningún campo es editable, no hay botón "Guardar".
+3. Usar la acción "Editar".
+4. **Esperado**: se abre el formulario con los datos precargados (mismo formulario del Escenario
+   1).
+5. Adjuntar una foto (JPG) y guardar.
+6. **Esperado**: regresa al detalle de solo lectura, mostrando la foto adjunta.
+7. Volver a editar y reemplazar la foto por otra distinta. Guardar.
+8. **Esperado**: el detalle muestra la nueva foto. Confirmar vía `service_role` que la fila
+   anterior en `archivos` (`tipo = 'foto'`) y su objeto en Storage ya no existen — a diferencia de
+   la póliza (Escenario 3), la foto no conserva historial.
+
 ## Notas de validación no funcional
 
 - **Auditoría** (constitución §2): tras cada alta/edición/baja/reactivación/eliminación,

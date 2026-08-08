@@ -140,6 +140,69 @@ export function useVehiculos() {
     }
   }
 
+  /** Alta / reemplazo en edición: a diferencia de `adjuntarPoliza`, SIN historial (FR-024) — la
+   * foto anterior (si había) se borra, pero solo *después* de que la nueva ya quedó vinculada
+   * exitosamente, para nunca perder la vigente si un paso intermedio falla (edge case de
+   * spec.md, contracts/vehiculos.md sección "Foto del vehículo"). */
+  async function adjuntarFoto(vehiculoId: string, archivo: File) {
+    error.value = null
+    const empresaId = usuario.value!.empresa_id!
+    const ruta = `foto/${empresaId}/${vehiculoId}/${nombreArchivoUnico(archivo.name)}`
+
+    const { data: vehiculoActual } = await client
+      .from('vehiculos')
+      .select('foto_archivo_id')
+      .eq('id', vehiculoId)
+      .single()
+    const fotoAnteriorId = vehiculoActual?.foto_archivo_id ?? null
+
+    const { error: errSubida } = await client.storage
+      .from(BUCKET)
+      .upload(ruta, archivo, { contentType: archivo.type })
+    if (errSubida) {
+      error.value = 'No se pudo subir la foto del vehículo.'
+      throw errSubida
+    }
+
+    const { data: archivoRow, error: errArchivo } = await client
+      .from('archivos')
+      .insert({
+        empresa_id: empresaId,
+        tipo: 'foto',
+        storage_path: ruta,
+        entidad_tipo: 'vehiculo',
+        entidad_id: vehiculoId,
+        subido_por: usuario.value!.id
+      })
+      .select('id')
+      .single()
+    if (errArchivo) {
+      error.value = errArchivo.message
+      throw errArchivo
+    }
+
+    const { error: errUpdate } = await client
+      .from('vehiculos')
+      .update({ foto_archivo_id: archivoRow.id })
+      .eq('id', vehiculoId)
+    if (errUpdate) {
+      error.value = errUpdate.message
+      throw errUpdate
+    }
+
+    if (fotoAnteriorId) {
+      const { data: anterior } = await client
+        .from('archivos')
+        .select('storage_path')
+        .eq('id', fotoAnteriorId)
+        .maybeSingle()
+      await client.from('archivos').delete().eq('id', fotoAnteriorId)
+      if (anterior) {
+        await client.storage.from(BUCKET).remove([anterior.storage_path])
+      }
+    }
+  }
+
   async function darDeBaja(id: string, motivo: string) {
     error.value = null
     const { error: err } = await client
@@ -254,6 +317,7 @@ export function useVehiculos() {
     crear,
     editar,
     adjuntarPoliza,
+    adjuntarFoto,
     darDeBaja,
     reactivar,
     eliminar,

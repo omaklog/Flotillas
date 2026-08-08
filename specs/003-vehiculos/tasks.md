@@ -39,7 +39,9 @@ Catálogos Base). T002–T007 aplican una única migración nueva con lo que fal
 
 - **[P]**: Puede ejecutarse en paralelo (archivos distintos o casos de prueba independientes
   dentro del mismo archivo, sin dependencias pendientes)
-- **[Story]**: Historia de usuario a la que pertenece (US1–US6, ver spec.md)
+- **[Story]**: Historia de usuario a la que pertenece (US1–US7, ver spec.md; las tareas de "Foto
+  del vehículo" no llevan label de historia por ser cruzadas entre US1/US3/US7, mismo criterio
+  que Foundational/Polish)
 - Cada tarea incluye ruta de archivo exacta
 
 ## Path Conventions
@@ -499,15 +501,194 @@ fallo es el flake #3, confirmado no reproducible en aislamiento). `vehiculos.spe
 
 ---
 
+## Fases agregadas por `/speckit-clarify` (sesión 2026-08-08, post-implementación)
+
+Tras cerrar T001-T049, el usuario señaló dos brechas contra la referencia de Stitch
+(`detalle-vehiculo-datos-generales.png`) que `/speckit-clarify` confirmó y resolvió: (1) no
+existe una vista de detalle de solo lectura — el listado lleva directo al formulario editable;
+(2) no hay opción para adjuntar una foto del vehículo. Ambas quedaron integradas en `spec.md`
+(`## Clarifications`, sesión 2026-08-08, FR-022 a FR-025, User Story 7). Las Fases 10-11 abajo
+son trabajo **nuevo, todavía no implementado** — a diferencia de las Fases 1-9, ninguna de sus
+tareas está marcada `[X]`.
+
+**Nota de alcance**: `plan.md`, `data-model.md` y `contracts/vehiculos.md` siguen reflejando el
+diseño original (6 historias, sin vista de detalle separada ni foto) — no se regeneraron como
+parte de este `/speckit-tasks` para no perder el diseño ya validado de lo ya construido. T060 y
+T053 incluyen en su propia descripción la actualización puntual de `data-model.md`/`contracts/
+vehiculos.md` que les corresponde, siguiendo el mismo criterio que T008 en Foundational (regenerar
+`database.types.ts` como parte de la tarea de migración, no como tarea aparte).
+
+**Lección para estas 2 fases** (de la sección "Regresión final" arriba, generalizada): cualquier
+`v-select` nuevo sobre un catálogo compartido de `Empresa E2E` MUST ser `v-autocomplete` desde el
+inicio, no `v-select` — ya se corrigió 3 veces en esta feature (Permiso, Tipo de vehículo,
+Aseguradora) por el mismo motivo (Vuetify virtualiza listas largas). No aplica aquí porque estas
+2 fases no agregan selects nuevos, pero queda anotado para Conductores/Combustible/Mantenimiento.
+
+## Phase 10: User Story 7 - Administrador consulta el detalle de un vehículo sin entrar a edición (Priority: P2)
+
+**Goal**: Separar la vista de detalle (solo lectura) de la edición — el listado abre el detalle,
+no el formulario; una acción "Editar" explícita lleva al formulario.
+
+**Independent Test**: Abrir un vehículo desde el listado y confirmar que se muestra en modo solo
+lectura, sin campos editables; usar "Editar", confirmar que abre el formulario con los datos
+precargados; guardar y confirmar que regresa al detalle con los datos actualizados.
+
+**Depende de US1** (reusa `FormularioVehiculo.vue`) **y de US3** (reutiliza `[id].vue`, que hoy
+aloja el formulario directo — esta historia lo convierte en la vista de solo lectura y mueve el
+formulario a una ruta nueva). US4 (baja/reactivar) y US6 (permisos) siguen viviendo en la misma
+página de detalle sin cambios en su propio comportamiento.
+
+### Tests for User Story 7
+
+- [X] T050 [P] [US7] Playwright: abrir un vehículo desde el listado muestra su detalle en modo
+      solo lectura — datos generales, estado de póliza, y ningún campo editable — en
+      `tests/e2e/vehiculos.spec.ts`
+- [X] T051 [P] [US7] Playwright: la acción "Editar" desde el detalle navega al formulario con los
+      datos del vehículo precargados en `tests/e2e/vehiculos.spec.ts`
+- [X] T052 [P] [US7] Playwright: guardar cambios en el formulario regresa a la vista de detalle
+      mostrando los datos ya actualizados (no se queda en el formulario) en
+      `tests/e2e/vehiculos.spec.ts`
+
+      **Estado**: confirmado en rojo (3/3 fallan, `/admin/vehiculos/[id]/editar` no existe
+      todavía y `editar-btn` no existe en `[id].vue`).
+
+### Implementation for User Story 7
+
+- [X] T053 [US7] Convertir `app/pages/admin/vehiculos/[id].vue` en vista de solo lectura: quita
+      `FormularioVehiculo` de la pestaña "Datos" y la reemplaza por una presentación de solo
+      lectura de los mismos campos (marca, modelo, placa, color, año, tipo de vehículo,
+      aseguradora, número/vencimiento de póliza) más un botón "Editar" en el header, junto a
+      "Dar de baja"/"Reactivar" ya existentes; las pestañas "Historial de Póliza" y "Permisos" no
+      cambian. Actualizar `data-model.md`/`contracts/vehiculos.md` con la nota de que el detalle
+      ya no reusa `FormularioVehiculo.vue` directamente.
+- [X] T054 [US7] Implementar `app/pages/admin/vehiculos/[id]/editar.vue`: mueve ahí la lógica de
+      `onEditar`/`adjuntarPoliza` que hoy vive en `[id].vue`, reusando `FormularioVehiculo.vue` en
+      modo edición (prop `registro`) igual que antes; al guardar exitosamente, `navigateTo` de
+      vuelta a `/admin/vehiculos/{id}` (no se queda en el formulario, T052).
+- [X] T055 [US7] Conectar el botón "Editar" de `[id].vue` (T053) con la ruta `[id]/editar.vue`
+      (T054); agregar un botón/enlace "Cancelar" en `editar.vue` que regrese al detalle sin
+      guardar.
+
+      **Hallazgo real durante la implementación**: tener `app/pages/admin/vehiculos/[id].vue`
+      (archivo) y `app/pages/admin/vehiculos/[id]/editar.vue` (carpeta) al mismo tiempo crea una
+      relación de ruta anidada en Nuxt (`NUXT_E4016`) — la ruta hija no renderiza a menos que el
+      padre incluya `<NuxtPage/>`. Se movió el detalle a `app/pages/admin/vehiculos/[id]/index.vue`
+      para que ambas sean rutas hermanas independientes, no padre-hijo. `data-model.md` actualizado
+      con esta nota. T023/T024 (US3, ya existentes) se ajustaron para navegar a `[id]/editar` en
+      vez de `[id]` directo, ya que el formulario se movió — 26/26 `vehiculos.spec.ts` +
+      9/9 `rls.spec.ts` en verde tras el ajuste, `typecheck`/`lint` limpios.
+
+**Checkpoint**: Vista de detalle funcional, probada de forma independiente sobre US1/US3 ya
+construidas; US4 y US6 siguen funcionando sin cambios (sus tests existentes no deben requerir
+ajustes salvo que dependan de un flujo de navegación que este cambio ya no reproduce).
+
+---
+
+## Phase 11: Foto del vehículo (FR-023, FR-024, FR-025 — cruza US1, US3, US7)
+
+**Goal**: Permitir adjuntar/reemplazar una foto opcional del vehículo (JPG/PNG, 10 MB), visible
+en el detalle de solo lectura (T053), sin historial de versiones (a diferencia de la póliza).
+
+**Independent Test**: Adjuntar una foto durante el alta o la edición y confirmar que aparece en
+el detalle; reemplazarla y confirmar (vía `service_role`) que la versión anterior ya no existe ni
+en `archivos` ni en Storage — a diferencia de la póliza, que sí conserva historial.
+
+**Depende de US1** (formulario de alta), **US3** (formulario de edición) **y US7** (vista de
+detalle donde se muestra, T053) — puede implementarse en cualquier momento después de esas tres,
+no bloquea ni es bloqueada por Polish (Fase 9, ya cerrada).
+
+### Foundational para esta fase
+
+- [X] T056 Crear una migración nueva (`supabase migration new vehiculos_foto`): `alter type
+      tipo_archivo add value 'foto'` + `alter table public.vehiculos add column foto_archivo_id
+      uuid references public.archivos(id)`. **Cuidado**: Postgres no permite usar un valor de
+      enum recién agregado con `ALTER TYPE ... ADD VALUE` dentro de la misma transacción en la
+      que se agregó — si `supabase migration up` aplica cada archivo en una sola transacción,
+      esta migración MUST limitarse a los dos `ALTER` y nada más (ninguna inserción con
+      `tipo = 'foto'` en la misma migración); verificar contra el comportamiento real del CLI
+      antes de asumir que funciona. Aplicar (`supabase migration up`), regenerar
+      `app/types/database.types.ts` (`supabase gen types typescript --local`), y actualizar la
+      tabla de `data-model.md` (sección `vehiculos`: nueva columna; sección `archivos`: nuevo
+      valor de `tipo`) y `contracts/vehiculos.md` (nuevo contrato de subida/reemplazo de foto,
+      mismo molde que el de póliza pero sin paso de conservar historial).
+
+      **Verificado**: `supabase migration up` aplicó ambos `ALTER` en una sola migración sin
+      error (el `ADD VALUE` y el `ADD COLUMN` conviven bien porque ninguno de los dos inserta
+      datos que usen `'foto'` todavía). Confirmado funcionalmente insertando y borrando una fila
+      de prueba con `tipo: 'foto'` vía REST/`service_role`. `database.types.ts` regenerado
+      (`tipo_archivo` ahora incluye `"foto"`, `vehiculos.foto_archivo_id` presente).
+
+### Tests for Foto del vehículo
+
+- [X] T057 [P] Playwright: adjuntar una foto durante el alta la deja visible en el detalle del
+      vehículo en `tests/e2e/vehiculos.spec.ts`
+- [X] T058 [P] Playwright: reemplazar la foto de un vehículo dejar la nueva visible y elimina la
+      anterior — verificado vía `service_role` que la fila anterior en `archivos` y su objeto en
+      Storage ya no existen (a diferencia de T024, que verifica lo opuesto para la póliza) en
+      `tests/e2e/vehiculos.spec.ts`
+- [X] T059 [P] Playwright: un archivo de foto con tipo o tamaño inválido se rechaza antes de
+      subirse, mismo criterio que T014 para la póliza, en `tests/e2e/vehiculos.spec.ts`
+- [X] T060 [P] Playwright: si la subida de una foto nueva falla durante un reemplazo, la foto
+      anterior sigue siendo la vigente — no se pierde ni se borra antes de confirmar que la nueva
+      quedó lista (edge case de `spec.md`) en `tests/e2e/vehiculos.spec.ts`
+
+      **Estado**: confirmado en rojo (4/4 fallan, `foto-input` no existe todavía).
+
+### Implementation for Foto del vehículo
+
+- [X] T061 Extender `app/composables/useVehiculos.ts`: `adjuntarFoto(vehiculoId, archivo)` — sube
+      a `documentos/foto/{empresa_id}/{vehiculo_id}/{archivo}` (mismo helper de nombre único de
+      `archivos.ts`), inserta la fila en `archivos` (`tipo: 'foto'`), actualiza
+      `vehiculos.foto_archivo_id`, y solo **después** de que el nuevo puntero quedó guardado
+      exitosamente, si había una foto anterior, borra su fila en `archivos` y su objeto en
+      Storage (orden importa: nunca borrar la vigente antes de confirmar la nueva, T060).
+- [X] T062 Extender `app/components/vehiculos/FormularioVehiculo.vue`: zona de adjuntar/reemplazar
+      foto (mismo patrón de dropzone accesible que `poliza-dropzone`, con su propio
+      `data-testid="foto-input"`), validación de tipo/tamaño vía `archivos.ts` antes de subir
+      (T059); el componente emite el archivo de foto seleccionado junto con el de póliza al
+      enviar el formulario (ampliar la firma del evento `enviar`).
+- [X] T063 Conectar la foto en `app/pages/admin/vehiculos/nuevo.vue` y
+      `app/pages/admin/vehiculos/[id]/editar.vue` (T054): llamar `adjuntarFoto` tras
+      `crear`/`editar`, best-effort — un fallo en la subida de la foto NO MUST bloquear ni
+      revertir el alta/edición ya guardada (mismo criterio que la póliza, FR-005/T060).
+- [X] T064 Mostrar la foto vigente (o un estado vacío con ícono genérico si no tiene) en la vista
+      de detalle de solo lectura (`[id].vue`, T053).
+
+      **Estado de la fase**: 4/4 tests de foto en verde a la primera corrida. Suite completa
+      (`vehiculos.spec.ts` + `rls.spec.ts`, 78 pruebas totales incluyendo T050-T064): 77/78 en
+      verde; el único fallo (T041, ajena a esta fase) es la misma flake de contención bajo carga
+      ya documentada en "Regresión final entre features" — confirmada no reproducible en
+      aislamiento. La foto vigente se resuelve como URL firmada (mismo mecanismo que la
+      descarga de póliza) y se muestra en la pestaña "Datos" del detalle de solo lectura.
+      `typecheck`/`lint` limpios. **Corrección propia durante la fase**: la primera regeneración
+      de `database.types.ts` (`supabase gen types typescript --local > archivo 2>&1`) mezcló el
+      orden de redirección de shell y dejó texto del CLI (`Connecting to db...`, aviso de nueva
+      versión) al inicio del archivo, rompiendo el parseo de ESLint — detectado por `yarn lint` y
+      corregido regenerando sin el `2>&1` antes del `>`.
+
+**Checkpoint**: Foto del vehículo funcional, probada de forma independiente. La limpieza al
+eliminar un vehículo (FR-016a, US-3.5) no requiere cambios — `eliminar()` en `useVehiculos.ts` ya
+borra todas las filas de `archivos` del vehículo sin importar su `tipo`, así que una foto vigente
+se limpia junto con el historial de póliza automáticamente. **Verificado** directamente vía REST
+con `service_role` (sembrar vehículo + `archivos` con `tipo: 'foto'` + `foto_archivo_id` →
+eliminar el vehículo → repetir la misma consulta `entidad_tipo=vehiculo&entidad_id=:id` que usa
+`eliminar()`): la fila de tipo `foto` sigue apareciendo tras borrar el vehículo, confirmando que
+el paso de limpieza de `archivos` la habría alcanzado igual que a las de `poliza` — fila de
+prueba limpiada manualmente después.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
 
 - **Setup (Phase 1)**: sin dependencias — puede correr en paralelo con Foundational.
 - **Foundational (Phase 2)**: sin dependencias de Setup, pero BLOQUEA las 6 historias de usuario.
-- **User Stories (Phase 3–8)**: todas dependen de Foundational. A diferencia de Catálogos Base,
-  **no todas son independientes entre sí** — ver la cadena de dependencias abajo.
+- **User Stories (Phase 3–8, 10)**: todas dependen de Foundational. A diferencia de Catálogos
+  Base, **no todas son independientes entre sí** — ver la cadena de dependencias abajo.
 - **Polish (Phase 9)**: depende de que las historias que se vayan a entregar estén completas.
+- **Foto del vehículo (Phase 11)**: agregada en una ronda posterior de `/speckit-clarify`; depende
+  de US1, US3 y US7 (Phase 10), no de Polish (Phase 9, ya cerrada para el alcance original).
 
 ### User Story Dependencies
 
@@ -522,9 +703,15 @@ fallo es el flake #3, confirmado no reproducible en aislamiento). `vehiculos.spe
   de US3/US4/US6, puede construirse justo después del MVP si se prioriza así.
 - **US6 (P3)**: depende de **US3** (usa la pestaña "Permisos" de `[id].vue`, placeholder desde
   T028) y de que exista al menos un permiso en el catálogo de Catálogos Base.
+- **US7 (P2, agregada post-`/speckit-clarify`)**: depende de **US1** y **US3**. Reestructura
+  `[id].vue` (de US3) en vista de solo lectura y mueve el formulario a `[id]/editar.vue` — US4 y
+  US6, que ya viven en `[id].vue`, no deberían necesitar cambios propios, pero sus tests deben
+  seguir pasando después de este cambio de estructura.
+- **Foto del vehículo (agregada post-`/speckit-clarify`, sin número de historia — cruza US1, US3,
+  US7)**: depende de que las tres ya estén completas; no depende de US4/US5/US6.
 
 Orden de implementación sugerido que respeta esta cadena: **US1 → US2 → US3 → (US4 y US5 en
-paralelo) → US6**.
+paralelo) → US6 → US7 → Foto del vehículo**.
 
 ### Within Each User Story
 
@@ -582,6 +769,8 @@ Task: "Playwright: fallo de subida no revierte el alta en tests/e2e/vehiculos.sp
 5. US5 (eliminación con limpieza) → probar → demo (puede ir en paralelo con US4, ver arriba)
 6. US6 (permisos asignados) → probar → demo
 7. Polish: RLS negativo, aislamiento de Storage, accesibilidad, auditoría de punta a punta
+8. **(agregado post-`/speckit-clarify`)** US7 (vista de detalle de solo lectura) → probar → demo
+9. **(agregado post-`/speckit-clarify`)** Foto del vehículo → probar → demo
 
 ### Parallel Team Strategy
 
@@ -605,3 +794,7 @@ persona en US1, otra en US2 en paralelo; luego una persona en US3 mientras otra 
 - Detenerse en cada checkpoint para validar la historia de forma independiente.
 - Evitar: tareas vagas, conflictos de mismo archivo sin serializar, reintroducir bugs ya
   encontrados y corregidos en Catálogos Base (ver "Lecciones de Catálogos Base" al inicio).
+- T050-T064 (Fases 10-11) se agregaron en una ronda posterior de `/speckit-tasks`, después de que
+  el usuario señaló brechas contra el mockup de Stitch vía `/speckit-clarify`. `checklists/
+  requirements.md` no se re-validó como parte de este comando (esa validación vive en
+  `/speckit-clarify`, ya corrida) — sigue en 16/16 sin cambios de estado.

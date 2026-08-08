@@ -29,13 +29,15 @@ aislamiento vía la ruta de sus objetos.
 | `numero_poliza` | text, nullable | |
 | `fecha_vencimiento_poliza` | date, nullable | usado para el badge vigente/por vencer/vencida (FR-008) |
 | `poliza_archivo_id` | uuid, nullable, FK → `archivos.id` | apunta a la versión vigente; `null` si nunca se adjuntó una |
+| `foto_archivo_id` | uuid, nullable, FK → `archivos.id` | **nueva (US-3.7, migración `20260808201217_vehiculos_foto.sql`)** — apunta a la foto vigente del vehículo; a diferencia de `poliza_archivo_id`, SIN historial: cada reemplazo borra la fila/objeto anterior en el mismo momento (FR-024), no solo al eliminar el vehículo |
 | `baja` | boolean, not null, default `false` | `true` = dado de baja (FR-012/013/014) |
 | `motivo_baja` | text, check `char_length <= 150` | obligatorio al dar de baja (FR-012); se conserva al reactivar |
 | `created_at`, `updated_at` | timestamptz | trigger `set_updated_at` ya existe |
 
-**Extensión de esta feature**: ninguna columna nueva — el esquema ya tiene todo lo que `spec.md`
-pide. Se agrega únicamente el trigger de auditoría `private.audit_vehiculos()` (research.md R4),
-que interpreta cambios en `baja` como `'desactivar'`/`'reactivar'` en vez de `'editar'`.
+**Extensión de esta feature**: se agrega el trigger de auditoría `private.audit_vehiculos()`
+(research.md R4), que interpreta cambios en `baja` como `'desactivar'`/`'reactivar'` en vez de
+`'editar'`; y, en una ronda posterior de `/speckit-clarify` (sesión 2026-08-08), la columna
+`foto_archivo_id` (arriba).
 
 **Transiciones**: `baja: false ⇄ true` (US-3.4, vía `private.audit_vehiculos()` — mismo patrón que
 `activo` en empresas/usuarios pero invertido). Eliminación física (US-3.5) sujeta a que no existan
@@ -51,11 +53,14 @@ sobre por qué `'crear'`/`'eliminar'` del módulo no bastan por sí solos.
 
 ## Archivo de póliza (`public.archivos`, `tipo = 'poliza'`, `entidad_tipo = 'vehiculo'`)
 
+> La misma tabla también almacena las fotos de vehículo con `tipo = 'foto'` (US-3.7) — ver nota
+> al final de esta sección.
+
 | Campo | Tipo | Notas |
 |---|---|---|
 | `id` | uuid, PK | |
 | `empresa_id` | uuid, not null, FK → `empresas.id` on delete cascade | |
-| `tipo` | enum `tipo_archivo` (`poliza`\|`licencia`\|`factura`) | siempre `'poliza'` para esta feature |
+| `tipo` | enum `tipo_archivo` (`poliza`\|`licencia`\|`factura`\|`foto`) | `'poliza'` o `'foto'` para esta feature; `'foto'` agregado en la migración `20260808201217_vehiculos_foto.sql` (US-3.7) |
 | `storage_path` | text, not null | `poliza/{empresa_id}/{vehiculo_id}/{archivo}` (research.md R3) |
 | `entidad_tipo` | text, not null | siempre `'vehiculo'` para esta feature |
 | `entidad_id` | uuid, not null | id del vehículo — **no es una FK real** (columna polimórfica genérica, compartida con futuras entidades como conductores); ver FR-016a sobre las implicaciones al eliminar |
@@ -86,6 +91,12 @@ política de `UPDATE`: los archivos nunca se editan, solo se crean nuevas versio
 > operario con `tiene_permiso('vehiculos','editar')` también pueda disparar la limpieza de
 > archivos al eliminar un vehículo (FR-016a) o al reemplazar una póliza — igual que ya puede
 > editar el vehículo mismo. Se ajusta esa política como parte de la migración de esta feature.
+
+**Foto del vehículo, sin historial (US-3.7)**: mismas columnas de arriba, con `tipo = 'foto'` y
+`vehiculos.foto_archivo_id` como puntero a la vigente. A diferencia de la póliza, **no** se
+conservan versiones anteriores — cada reemplazo borra la fila y el objeto de Storage anterior en
+el mismo momento de la operación (contracts/vehiculos.md, sección "Foto del vehículo"), en vez de
+esperar a que se elimine el vehículo completo.
 
 ## Asignación de permiso a vehículo (`public.vehiculo_permisos`)
 
@@ -138,3 +149,11 @@ Una sola migración nueva de esta feature debe agregar, sobre lo ya aplicado:
 No se modifican columnas existentes de `vehiculos`/`vehiculo_permisos`, ni la RLS de esas dos
 tablas, ni los módulos/acciones ya sembrados — todo lo demás para esta feature ya está en
 producción local desde Feature 001.
+
+**Nota (US-3.7, `/speckit-clarify` sesión 2026-08-08)**: `app/pages/admin/vehiculos/[id]/index.vue`
+(antes `[id].vue`) ya no reusa `FormularioVehiculo.vue` directamente — es una vista de solo
+lectura de los mismos campos. El formulario editable vive ahora en
+`app/pages/admin/vehiculos/[id]/editar.vue`, ruta hermana (no anidada) gracias a la carpeta
+`[id]/` — Nuxt exige `<NuxtPage/>` en el padre si `[id].vue` y `[id]/editar.vue` coexisten como
+archivo+carpeta, así que se movió el detalle a `[id]/index.vue` para que ambas rutas sean
+independientes. No hay cambios de esquema de base de datos asociados a este ajuste.

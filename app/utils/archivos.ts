@@ -1,4 +1,5 @@
 const TIPOS_PERMITIDOS = ['application/pdf', 'image/jpeg', 'image/png']
+const TIPOS_PERMITIDOS_FOTO = ['image/jpeg', 'image/png']
 const TAMANO_MAXIMO_BYTES = 10 * 1024 * 1024
 
 /** Valida tipo MIME y tamaño de un archivo antes de subirlo (FR-004). `null` = válido. */
@@ -8,6 +9,18 @@ export function validarArchivo(archivo: File): string | null {
   }
   if (archivo.size > TAMANO_MAXIMO_BYTES) {
     return 'El archivo no debe superar 10 MB.'
+  }
+  return null
+}
+
+/** Igual que `validarArchivo`, pero sin PDF — la foto del vehículo solo acepta imagen (FR-025).
+ * `null` = válido. */
+export function validarFoto(archivo: File): string | null {
+  if (!TIPOS_PERMITIDOS_FOTO.includes(archivo.type)) {
+    return 'La foto debe ser JPG o PNG.'
+  }
+  if (archivo.size > TAMANO_MAXIMO_BYTES) {
+    return 'La foto no debe superar 10 MB.'
   }
   return null
 }

@@ -28,6 +28,18 @@ reutilizarán Conductores, Combustible y Mantenimiento.
   correspondientes en Storage; no quedan huérfanos.
 - Q: ¿Cuántos días antes del vencimiento de la póliza debe un vehículo mostrarse como "por
   vencer" en el listado (FR-008)? → A: 60 días.
+- Q: La referencia de Stitch (`detalle-vehiculo-datos-generales.png`) muestra una pantalla de
+  detalle de solo lectura, separada de la edición (botón "Editar" explícito). La implementación
+  actual combina ambas: el clic en el listado abre directo el formulario editable. ¿Cómo se
+  resuelve? → A: Agregar una pantalla de detalle de solo lectura con un botón "Editar" explícito
+  hacia el formulario, alineada con el mockup.
+- Q: El mockup de detalle muestra una foto del vehículo en la tarjeta "Identificación del
+  Vehículo", capacidad que no existe hoy (ni columna en `vehiculos` ni campo en el formulario).
+  ¿Se agrega? → A: Sí, foto opcional, con el mismo patrón de Storage que la póliza (bucket
+  `documentos`, nuevo valor `foto` en el enum `tipo_archivo`).
+- Q: ¿La foto del vehículo necesita el mismo historial de versiones que la póliza? → A: No — solo
+  la foto vigente; un puntero `foto_archivo_id` en `vehiculos` que se reemplaza al subir una
+  nueva (el objeto anterior en Storage se elimina), sin conservar versiones anteriores.
 
 ## Actores
 
@@ -75,6 +87,19 @@ Estas decisiones ya fueron validadas y no están abiertas a `/speckit-clarify`:
   polimórfica vía `entidad_id`), no hay borrado en cascada automático a nivel de base de datos —
   esta feature MUST borrar explícitamente los registros de `archivos` y los objetos de Storage
   asociados al vehículo como parte de la misma operación de eliminación, para no dejar huérfanos.
+- **Detalle de solo lectura, separado de la edición** (Clarifications, sesión 2026-08-08): el
+  detalle de un vehículo MUST ser una vista de solo lectura por defecto, con una acción explícita
+  ("Editar") que lleva al formulario editable — no un clic directo del listado al formulario. El
+  historial de póliza y los permisos asignados (US-3.3, US-3.6) viven dentro de este mismo
+  detalle, en pestañas o secciones separadas de los datos generales.
+- **Foto del vehículo — mismo patrón que la póliza, sin historial** (Clarifications, sesión
+  2026-08-08): el administrador MUST poder adjuntar una foto opcional del vehículo (JPG o PNG,
+  mismo límite de 10 MB), almacenada en el mismo bucket privado `documentos` con un nuevo valor
+  `foto` en el enum `tipo_archivo` (ruta `documentos/foto/{empresa_id}/{vehiculo_id}/{archivo}`).
+  A diferencia de la póliza, la foto NO MUST conservar historial de versiones: `vehiculos` MUST
+  tener un puntero `foto_archivo_id` que se reemplaza al subir una nueva foto, y el objeto
+  anterior en Storage (y su fila en `archivos`) MUST eliminarse en el mismo momento del
+  reemplazo — no como parte de la eliminación del vehículo, sino en cada reemplazo individual.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -109,6 +134,9 @@ que queda vinculada como vigente.
    del archivo falla por cualquier motivo después de haberse creado el vehículo, **Then** el
    vehículo queda creado sin póliza adjunta y el administrador puede agregarla después editando
    el registro — el alta no se pierde por el fallo de subida.
+6. **Given** el administrador está en el formulario de alta, **When** además adjunta una foto
+   (JPG o PNG, dentro del límite de 10 MB), **Then** el vehículo se crea con esa foto visible en
+   su detalle (Clarifications, sesión 2026-08-08).
 
 ---
 
@@ -246,6 +274,36 @@ y luego quitar la asignación.
 
 ---
 
+### User Story 7 - Administrador consulta el detalle de un vehículo sin entrar a edición (Priority: P2)
+
+Como administrador, quiero ver los datos de un vehículo en una vista de solo lectura al abrirlo
+desde el listado, y entrar a editarlo solo cuando lo decido explícitamente, para no arriesgar un
+cambio accidental al simplemente consultar su información.
+
+**Why this priority**: Es la puerta de entrada al detalle que ya usan US-3.3 (edición e
+historial de póliza), US-3.4 (baja/reactivación) y US-3.6 (permisos asignados) — sin esta
+historia, esas tres dependen de abrir directo el formulario editable, lo que no coincide con el
+patrón de UI ya establecido en el resto del sistema (p. ej. Configuración de la Empresa separa
+lectura de edición).
+
+**Independent Test**: Abrir un vehículo desde el listado y confirmar que se muestra en modo solo
+lectura (sin campos editables); usar la acción "Editar" y confirmar que lleva al formulario ya
+usado por US-3.3.
+
+**Acceptance Scenarios**:
+
+1. **Given** el administrador está en el listado de vehículos, **When** hace clic en un vehículo,
+   **Then** se abre su detalle en modo solo lectura, con sus datos generales, foto (si tiene),
+   estado de póliza, historial de póliza y permisos asignados visibles, y ningún campo editable.
+2. **Given** el administrador está viendo el detalle de un vehículo, **When** usa la acción
+   "Editar", **Then** accede al formulario editable con los datos del vehículo precargados (mismo
+   formulario de US-3.3).
+3. **Given** el administrador terminó de editar y guardó los cambios, **When** el sistema
+   confirma el guardado, **Then** regresa a la vista de detalle en modo solo lectura mostrando los
+   datos actualizados, no se queda en el formulario.
+
+---
+
 ### Edge Cases
 
 - ¿Qué pasa si falla la subida del archivo de póliza durante el alta (paso 2)? El vehículo ya
@@ -268,6 +326,12 @@ y luego quitar la asignación.
 - ¿Qué pasa si el archivo seleccionado tiene una extensión válida pero contenido corrupto o de
   otro tipo real? Fuera de alcance de esta feature validar el contenido más allá del tipo MIME y
   la extensión declarados — mismo nivel de validación que el resto del sistema.
+- ¿Qué pasa si falla la subida de una foto nueva durante un reemplazo? La foto anterior MUST
+  seguir siendo la vigente hasta que la nueva termine de subirse y vincularse exitosamente — el
+  reemplazo no MUST borrar la foto anterior antes de confirmar que la nueva quedó lista (mismo
+  criterio de "no perder lo que ya existía" que FR-005 aplica al alta).
+- ¿Qué pasa si el administrador nunca adjunta una foto? El vehículo funciona con normalidad; el
+  detalle MUST mostrar un estado vacío (p. ej. un ícono genérico) en vez de exigir una foto.
 
 ## Requirements *(mandatory)*
 
@@ -329,6 +393,19 @@ y luego quitar la asignación.
   `vehiculos` MUST poder ver el listado, el detalle y el historial de póliza de los vehículos de
   su empresa, pero NO MUST poder crear, editar, dar de baja, reactivar, eliminar vehículos ni
   gestionar sus permisos asignados.
+- **FR-022**: El detalle de un vehículo MUST mostrarse por defecto en modo de solo lectura, sin
+  campos editables; el sistema MUST proveer una acción explícita ("Editar") que lleva al
+  formulario editable — el listado NO MUST llevar directo al formulario (Clarifications, sesión
+  2026-08-08).
+- **FR-023**: El administrador MUST poder adjuntar una foto del vehículo (JPG o PNG, máximo 10
+  MB) de forma opcional, durante el alta o después editando el registro (Clarifications, sesión
+  2026-08-08).
+- **FR-024**: El administrador MUST poder reemplazar la foto de un vehículo; a diferencia del
+  archivo de póliza (FR-010), la foto anterior MUST eliminarse (registro en `archivos` y objeto
+  en Storage) en el mismo momento del reemplazo — no se conserva historial de versiones de foto
+  (Clarifications, sesión 2026-08-08).
+- **FR-025**: El sistema MUST rechazar archivos de foto que no sean JPG o PNG, o que excedan 10
+  MB, antes de intentar subirlos (mismo criterio que FR-004 para la póliza).
 
 ### Key Entities
 
@@ -336,12 +413,16 @@ y luego quitar la asignación.
   empresa), color, número de serie, número de motor, capacidad de carga, año, número de ejes,
   tipo de vehículo (referencia a Catálogos Base), aseguradora (referencia a Catálogos Base),
   número de póliza, fecha de vencimiento de póliza, referencia a su archivo de póliza vigente,
-  estado de baja y motivo. Referenciado por Combustible, Mantenimiento, Checklist y Servicios
-  Obligatorios (features futuras).
+  referencia a su foto vigente (opcional, sin historial — a diferencia de la póliza), estado de
+  baja y motivo. Referenciado por Combustible, Mantenimiento, Checklist y Servicios Obligatorios
+  (features futuras).
 - **Archivo de póliza**: cada versión de póliza subida para un vehículo. Atributos: tipo de
   documento, ruta de almacenamiento, a qué vehículo pertenece, quién lo subió, cuándo. Un
   vehículo conserva todas sus versiones históricas; solo una a la vez es la vigente. Su ciclo de
   vida está ligado al del vehículo: se elimina junto con él (FR-016a), no de forma independiente.
+- **Foto del vehículo**: mismo tipo de registro que el archivo de póliza (misma tabla `archivos`,
+  nuevo valor `foto` del enum de tipo), pero sin historial: cada reemplazo elimina la versión
+  anterior en el mismo momento (FR-024), no solo al eliminar el vehículo.
 - **Asignación de permiso a vehículo**: relación entre un vehículo y un tipo de permiso del
   catálogo de Catálogos Base, con su propia fecha de vencimiento. Un vehículo puede tener varias
   asignaciones; cada combinación vehículo-permiso es única.

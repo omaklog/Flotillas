@@ -66,6 +66,31 @@
             />
           </v-col>
         </v-row>
+
+        <div
+          class="poliza-dropzone mt-4"
+          role="button"
+          tabindex="0"
+          aria-label="Adjuntar foto del vehículo"
+          @click="triggerFotoInput"
+          @keydown.enter="triggerFotoInput"
+          @keydown.space.prevent="triggerFotoInput"
+        >
+          <v-icon icon="mdi-camera-outline" size="32" color="grey" />
+          <p class="text-metadata text-medium-emphasis text-center mt-2">
+            {{ archivoFotoSeleccionado ? archivoFotoSeleccionado.name : 'Adjuntar foto del vehículo (JPG o PNG)' }}
+          </p>
+          <p class="text-label-caps text-medium-emphasis mt-1">Tamaño máximo 10 MB</p>
+          <input
+            ref="inputFotoRef"
+            type="file"
+            accept="image/jpeg,image/png"
+            class="d-none"
+            data-testid="foto-input"
+            @change="onFotoInputChange"
+          />
+        </div>
+        <v-messages v-if="errorFoto" :messages="[errorFoto]" color="error" active />
       </v-card-text>
     </v-card>
 
@@ -140,7 +165,7 @@
 
 <script setup lang="ts">
 import type { Database } from '~/types/database.types'
-import { validarArchivo } from '~/utils/archivos'
+import { validarArchivo, validarFoto } from '~/utils/archivos'
 
 type VehiculoRow = Database['public']['Tables']['vehiculos']['Row']
 type VehiculoValores = Omit<
@@ -157,7 +182,9 @@ const props = withDefaults(
   { registro: undefined, enviando: false, errorExterno: null }
 )
 
-const emit = defineEmits<{ enviar: [valores: VehiculoValores, archivo: File | null] }>()
+const emit = defineEmits<{
+  enviar: [valores: VehiculoValores, archivoPoliza: File | null, archivoFoto: File | null]
+}>()
 
 const tiposVehiculo = useCatalogo('tipos_vehiculo', {
   camposBusqueda: ['nombre'],
@@ -179,6 +206,9 @@ const formRef = ref()
 const inputFileRef = ref<HTMLInputElement>()
 const archivoSeleccionado = ref<File | null>(null)
 const errorArchivo = ref('')
+const inputFotoRef = ref<HTMLInputElement>()
+const archivoFotoSeleccionado = ref<File | null>(null)
+const errorFoto = ref('')
 
 const valores = reactive({
   marca: props.registro?.marca ?? '',
@@ -224,6 +254,26 @@ function onFileInputChange(event: Event) {
   archivoSeleccionado.value = archivo
 }
 
+function triggerFotoInput() {
+  inputFotoRef.value?.click()
+}
+
+function onFotoInputChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const archivo = input.files?.[0]
+  errorFoto.value = ''
+  if (!archivo) return
+
+  const mensaje = validarFoto(archivo)
+  if (mensaje) {
+    errorFoto.value = mensaje
+    archivoFotoSeleccionado.value = null
+    input.value = ''
+    return
+  }
+  archivoFotoSeleccionado.value = archivo
+}
+
 async function onSubmit() {
   const { valid } = await formRef.value.validate()
   if (!valid) return
@@ -243,7 +293,7 @@ async function onSubmit() {
     numero_poliza: valores.numero_poliza || null,
     fecha_vencimiento_poliza: valores.fecha_vencimiento_poliza || null
   }
-  emit('enviar', payload, archivoSeleccionado.value)
+  emit('enviar', payload, archivoSeleccionado.value, archivoFotoSeleccionado.value)
 }
 </script>
 

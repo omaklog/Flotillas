@@ -75,6 +75,25 @@ ids), no es un campo de la fila (data-model.md).
 `getPublicUrl` no sirve; research.md R6). El enlace resultante se usa directo como `href` de
 descarga, válido 60 segundos.
 
+## Foto del vehículo (US-3.7, FR-023 a FR-025 — Clarifications sesión 2026-08-08)
+
+A diferencia de la póliza, **sin historial de versiones**: un solo puntero
+`vehiculos.foto_archivo_id` que se reemplaza; la versión anterior se elimina, no se conserva.
+
+**Adjuntar o reemplazar**:
+1. Validar tipo (`image/jpeg`, `image/png`) y tamaño (≤10 MB) antes de subir (FR-025).
+2. `supabase.storage.from('documentos').upload(`foto/${empresaId}/${vehiculoId}/${nombreArchivo}`, archivo, { contentType: archivo.type })`.
+3. `supabase.from('archivos').insert({ empresa_id, tipo: 'foto', storage_path, entidad_tipo: 'vehiculo', entidad_id: vehiculoId, subido_por: usuarioId }).select('id').single()`.
+4. `supabase.from('vehiculos').update({ foto_archivo_id: nuevoArchivoId }).eq('id', vehiculoId)`.
+5. **Solo si los pasos 1-4 tuvieron éxito** y ya había una foto anterior (`foto_archivo_id`
+   previo al paso 4): `supabase.from('archivos').delete().eq('id', fotoAnteriorId)` +
+   `supabase.storage.from('documentos').remove([rutaAnterior])` — en ese orden, para nunca perder
+   la foto vigente si el paso 2/3/4 falla a medias (edge case de `spec.md`, T060 de `tasks.md`).
+
+**Mostrar la foto vigente** — no hay historial que listar; `vehiculos.foto_archivo_id` (si no es
+`null`) resuelve una URL firmada igual que la descarga de póliza, usada como `src` de una
+`<v-img>` en el detalle de solo lectura (US-3.7).
+
 ## Permisos asignados al vehículo (US-3.6)
 
 **Listar asignados** —

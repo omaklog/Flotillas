@@ -12,6 +12,15 @@
       </div>
       <div v-if="vehiculo" class="d-flex ga-2">
         <v-btn
+          variant="flat"
+          color="primary"
+          prepend-icon="mdi-pencil-outline"
+          data-testid="editar-btn"
+          :to="`/admin/vehiculos/${vehiculoId}/editar`"
+        >
+          Editar
+        </v-btn>
+        <v-btn
           v-if="!vehiculo.baja"
           variant="outlined"
           color="error"
@@ -54,12 +63,37 @@
 
       <v-window v-model="tabActiva">
         <v-window-item value="datos">
-          <VehiculosFormularioVehiculo
-            :registro="vehiculo"
-            :enviando="enviando"
-            :error-externo="errorMsg"
-            @enviar="onEditar"
-          />
+          <v-card class="app-card-shadow" variant="flat" data-testid="datos-vehiculo">
+            <v-card-text>
+              <div class="mb-4" style="max-width: 240px">
+                <v-img
+                  v-if="fotoUrl"
+                  :src="fotoUrl"
+                  alt="Foto del vehículo"
+                  width="240"
+                  height="180"
+                  cover
+                  rounded
+                  data-testid="foto-vehiculo"
+                />
+                <div
+                  v-else
+                  class="d-flex align-center justify-center bg-surface rounded"
+                  style="width: 240px; height: 180px; border: 1px dashed rgb(var(--v-theme-outline))"
+                  data-testid="foto-vehiculo-vacia"
+                >
+                  <v-icon icon="mdi-car-outline" size="48" color="grey" />
+                </div>
+              </div>
+
+              <v-row>
+                <v-col v-for="campo in camposSoloLectura" :key="campo.label" cols="12" md="4">
+                  <p class="text-label-caps text-medium-emphasis">{{ campo.label }}</p>
+                  <p class="text-body-main">{{ campo.valor ?? '—' }}</p>
+                </v-col>
+              </v-row>
+            </v-card-text>
+          </v-card>
         </v-window-item>
 
         <v-window-item value="historial">
@@ -80,35 +114,65 @@
 
 <script setup lang="ts">
 import type { Database } from '~/types/database.types'
+import type { VehiculoListado } from '~/composables/useVehiculos'
 
 definePageMeta({ layout: 'admin' })
-
-type VehiculoRow = Database['public']['Tables']['vehiculos']['Row']
-type VehiculoValores = Omit<
-  Database['public']['Tables']['vehiculos']['Insert'],
-  'empresa_id' | 'poliza_archivo_id'
->
 
 const route = useRoute()
 const vehiculoId = route.params.id as string
 
 const client = useSupabaseClient<Database>()
-const { editar, adjuntarPoliza, darDeBaja, reactivar, error: errorVehiculos } = useVehiculos()
+const { darDeBaja, reactivar, descargarArchivo, error: errorVehiculos } = useVehiculos()
 
 const cargando = ref(true)
-const vehiculo = ref<VehiculoRow | null>(null)
+const vehiculo = ref<VehiculoListado | null>(null)
+const fotoUrl = ref<string | null>(null)
 const tabActiva = ref('datos')
-const enviando = ref(false)
-const errorMsg = ref<string | null>(null)
 
 const dialogoBajaAbierto = ref(false)
 const dandoDeBaja = ref(false)
 const reactivando = ref(false)
 const errorBaja = ref<string | null>(null)
 
+const camposSoloLectura = computed(() => {
+  const v = vehiculo.value
+  if (!v) return []
+  return [
+    { label: 'Marca', valor: v.marca },
+    { label: 'Modelo', valor: v.modelo },
+    { label: 'Placa', valor: v.placa },
+    { label: 'Color', valor: v.color },
+    { label: 'Año', valor: v.anio },
+    { label: 'Número de serie', valor: v.numero_serie },
+    { label: 'Número de motor', valor: v.numero_motor },
+    { label: 'Capacidad de carga', valor: v.capacidad_carga },
+    { label: 'Número de ejes', valor: v.numero_ejes },
+    { label: 'Tipo de vehículo', valor: v.tipos_vehiculo?.nombre },
+    { label: 'Aseguradora', valor: v.aseguradoras?.razon_social },
+    { label: 'Número de póliza', valor: v.numero_poliza },
+    { label: 'Fecha de vencimiento de póliza', valor: v.fecha_vencimiento_poliza }
+  ]
+})
+
 async function cargar() {
-  const { data } = await client.from('vehiculos').select('*').eq('id', vehiculoId).maybeSingle()
-  vehiculo.value = data
+  const { data } = await client
+    .from('vehiculos')
+    .select('*, tipos_vehiculo(nombre), aseguradoras(razon_social)')
+    .eq('id', vehiculoId)
+    .maybeSingle()
+  vehiculo.value = data as unknown as VehiculoListado | null
+
+  fotoUrl.value = null
+  if (vehiculo.value?.foto_archivo_id) {
+    const { data: foto } = await client
+      .from('archivos')
+      .select('storage_path')
+      .eq('id', vehiculo.value.foto_archivo_id)
+      .maybeSingle()
+    if (foto) {
+      fotoUrl.value = await descargarArchivo(foto.storage_path)
+    }
+  }
 }
 
 onMounted(async () => {
@@ -116,31 +180,6 @@ onMounted(async () => {
   await cargar()
   cargando.value = false
 })
-
-async function onEditar(valores: VehiculoValores, archivo: File | null) {
-  enviando.value = true
-  errorMsg.value = null
-  try {
-    await editar(vehiculoId, valores)
-  } catch {
-    errorMsg.value = errorVehiculos.value ?? 'No se pudo guardar el vehículo.'
-    enviando.value = false
-    return
-  }
-
-  if (archivo) {
-    // Si la subida falla, la edición de datos ya quedó guardada — no se pierde (mismo criterio
-    // que el alta, FR-005).
-    try {
-      await adjuntarPoliza(vehiculoId, archivo)
-    } catch {
-      // Silencioso a propósito.
-    }
-  }
-
-  await cargar()
-  enviando.value = false
-}
 
 async function onDarDeBaja(motivo: string) {
   dandoDeBaja.value = true

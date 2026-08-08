@@ -11,6 +11,21 @@
       <v-divider />
       <v-list nav>
         <v-list-item to="/admin/usuarios" prepend-icon="mdi-account-group" title="Usuarios" />
+        <v-list-item
+          to="/admin/tipos-vehiculo"
+          prepend-icon="mdi-car-outline"
+          title="Tipos de Vehículo"
+        />
+        <v-list-item
+          to="/admin/aseguradoras"
+          prepend-icon="mdi-shield-car"
+          title="Aseguradoras"
+        />
+        <v-list-item
+          to="/admin/tipos-permiso"
+          prepend-icon="mdi-file-certificate-outline"
+          title="Catálogo de Permisos"
+        />
         <v-list-item to="/admin/configuracion" prepend-icon="mdi-cog" title="Configuración" />
       </v-list>
     </v-navigation-drawer>

@@ -337,7 +337,7 @@ test.describe('US9 — Administrador gestiona operarios existentes', () => {
     // DELETE /api/usuarios/:id.
     const { data: tipoVehiculo } = await admin
       .from('tipos_vehiculo')
-      .insert({ empresa_id: empresaId, clave: `t073-${Date.now()}`, nombre: 'Tipo T073' })
+      .insert({ empresa_id: empresaId, clave: `t073_${Date.now()}`, nombre: 'Tipo T073' })
       .select('id')
       .single()
     const { data: vehiculo } = await admin

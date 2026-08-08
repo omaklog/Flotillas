@@ -1,6 +1,7 @@
 import { chromium } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../../app/types/database.types'
+import { inyectarSesion } from './helpers'
 
 // research.md R10: sesiones pre-autenticadas por rol, sin pasar por la UI de login (que
 // para US1 en adelante todavía no existe). Se siembra vía service_role, se inicia sesión
@@ -74,31 +75,6 @@ async function ensureUsuarioDePrueba(
   if (error) throw error
 }
 
-function cookieNameParaUrl(url: string): string {
-  return `sb-${new URL(url).hostname.split('.')[0]}-auth-token`
-}
-
-function toBase64Url(value: string): string {
-  return Buffer.from(value, 'utf-8').toString('base64url')
-}
-
-/** Replica @supabase/ssr createChunks: una sola cookie si cabe, si no, `${key}.0`, `${key}.1`, ... */
-function crearCookiesDeSesion(key: string, encoded: string): { name: string; value: string }[] {
-  const MAX_CHUNK_SIZE = 3180
-  const encodedLength = encodeURIComponent(encoded).length
-  if (encodedLength <= MAX_CHUNK_SIZE) {
-    return [{ name: key, value: encoded }]
-  }
-  const chunks: string[] = []
-  let remaining = encodeURIComponent(encoded)
-  while (remaining.length > 0) {
-    const head = remaining.slice(0, MAX_CHUNK_SIZE)
-    chunks.push(decodeURIComponent(head))
-    remaining = remaining.slice(head.length)
-  }
-  return chunks.map((value, i) => ({ name: `${key}.${i}`, value }))
-}
-
 async function iniciarSesionYGuardarStorageState(fixture: RoleFixture) {
   const anon = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY)
   const { data, error } = await anon.auth.signInWithPassword({
@@ -109,24 +85,9 @@ async function iniciarSesionYGuardarStorageState(fixture: RoleFixture) {
     throw new Error(`No se pudo iniciar sesión como ${fixture.email}: ${error?.message}`)
   }
 
-  const cookieKey = cookieNameParaUrl(SUPABASE_URL)
-  const encoded = 'base64-' + toBase64Url(JSON.stringify(data.session))
-  const cookieChunks = crearCookiesDeSesion(cookieKey, encoded)
-
-  const appUrl = new URL('http://localhost:3030')
   const browser = await chromium.launch()
   const context = await browser.newContext()
-  await context.addCookies(
-    cookieChunks.map((c) => ({
-      name: c.name,
-      value: c.value,
-      domain: appUrl.hostname,
-      path: '/',
-      sameSite: 'Lax' as const,
-      httpOnly: false,
-      secure: false
-    }))
-  )
+  await inyectarSesion(context, data.session, SUPABASE_URL)
   await context.storageState({ path: `tests/e2e/.auth/${fixture.role}.json` })
   await browser.close()
 }

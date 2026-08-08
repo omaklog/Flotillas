@@ -97,6 +97,80 @@ test.describe('RLS — casos negativos (constitución §4)', () => {
     expect(data).toEqual([])
   })
 
+  // Feature 002 (Catálogos Base) — T046: aislamiento por empresa en las 3 tablas de catálogo
+  // (FR-014), consolidado aquí en vez de repetido por historia — mismo criterio que los 2 tests
+  // de arriba (empresas/usuarios). quickstart.md Escenario 5. Cierra G1 de /speckit-analyze.
+  test('catálogos: un admin no ve tipos_vehiculo/aseguradoras/permisos de otra empresa, y la misma clave en dos empresas no choca', async ({
+    request
+  }) => {
+    const rfc = `T${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).toUpperCase().slice(2, 6)}`
+    const correoAdmin = `admin-rls-catalogos-${Date.now()}@flotillas.local`
+
+    // Alta de una segunda empresa: su trigger de siembra (FR-011) crea 'ligero'/'pesado'/
+    // 'mat_peligrosos' — mismas claves que ya existen en la empresa de admin-e2e. Si eso no
+    // choca, ya demuestra que UNIQUE es (empresa_id, clave), no global.
+    const altaRespuesta = await request.post('/api/empresas', {
+      data: {
+        empresa: {
+          nombre: 'Empresa Ajena Catálogos RLS',
+          rfc,
+          pais: 'México',
+          moneda: 'MXN',
+          unidad_distancia: 'km',
+          unidad_combustible: 'litros'
+        },
+        administrador: { nombre: 'Admin Ajeno Catálogos', correo: correoAdmin }
+      }
+    })
+    expect(altaRespuesta.status()).toBe(201)
+    const { empresa_id: empresaAjenaId } = await altaRespuesta.json()
+
+    const admin = await clienteAutenticado('admin-e2e@flotillas.local')
+
+    const { data: tiposAjenos } = await admin
+      .from('tipos_vehiculo')
+      .select('*')
+      .eq('empresa_id', empresaAjenaId)
+    expect(tiposAjenos).toEqual([])
+
+    const { data: aseguradorasAjenas } = await admin
+      .from('aseguradoras')
+      .select('*')
+      .eq('empresa_id', empresaAjenaId)
+    expect(aseguradorasAjenas).toEqual([])
+
+    const { data: permisosAjenos } = await admin
+      .from('permisos')
+      .select('*')
+      .eq('empresa_id', empresaAjenaId)
+    expect(permisosAjenos).toEqual([])
+
+    // Confirma explícitamente (vía service_role, que sí puede leer ambas) que 'pesado' existe
+    // en las dos empresas como filas distintas — la clave duplicada entre empresas fue
+    // aceptada, no rechazada.
+    const service = adminSupabaseClient()
+    const { data: perfilAdmin } = await service
+      .from('usuarios')
+      .select('empresa_id')
+      .eq('correo', 'admin-e2e@flotillas.local')
+      .single()
+    const { data: pesadoPropio } = await service
+      .from('tipos_vehiculo')
+      .select('id')
+      .eq('empresa_id', perfilAdmin!.empresa_id!)
+      .eq('clave', 'pesado')
+      .single()
+    const { data: pesadoAjeno } = await service
+      .from('tipos_vehiculo')
+      .select('id')
+      .eq('empresa_id', empresaAjenaId)
+      .eq('clave', 'pesado')
+      .single()
+    expect(pesadoPropio).not.toBeNull()
+    expect(pesadoAjeno).not.toBeNull()
+    expect(pesadoPropio!.id).not.toBe(pesadoAjeno!.id)
+  })
+
   test('usuario_permisos: un operario no puede otorgarse permisos directamente (solo vía el endpoint de admin)', async () => {
     const operario = await clienteAutenticado('operario-e2e@flotillas.local')
 
@@ -121,5 +195,147 @@ test.describe('RLS — casos negativos (constitución §4)', () => {
     // el `with check` de RLS sí lanza un error real de Postgres.
     expect(error).not.toBeNull()
     expect(error!.message).toMatch(/row-level security/i)
+  })
+
+  // Feature 002 (Catálogos Base) — T020/T030/T041: un operario tiene 'ver' por defecto en los
+  // 3 módulos de catálogo (modulos_ver en otorgar_permisos_default_operario), pero no
+  // 'crear'/'editar'/'eliminar' salvo que el admin se lo otorgue explícitamente (spec FR-015).
+  test('tipos_vehiculo: un operario con solo "ver" no puede crear, editar ni eliminar (US1, FR-015)', async () => {
+    const operario = await clienteAutenticado('operario-e2e@flotillas.local')
+    const {
+      data: { user }
+    } = await operario.auth.getUser()
+    const { data: perfil } = await operario
+      .from('usuarios')
+      .select('id, empresa_id')
+      .eq('auth_user_id', user!.id)
+      .single()
+
+    const { error: insertError } = await operario.from('tipos_vehiculo').insert({
+      empresa_id: perfil!.empresa_id!,
+      clave: `rls_t020_${Date.now()}`,
+      nombre: 'Intento Operario T020'
+    })
+    expect(insertError).not.toBeNull()
+    expect(insertError!.message).toMatch(/row-level security/i)
+
+    // 'ligero' ya viene sembrado por defecto (FR-011) — el operario sí puede leerlo (tiene
+    // 'ver'), pero no editarlo ni eliminarlo.
+    const { data: existente } = await operario
+      .from('tipos_vehiculo')
+      .select('id')
+      .eq('empresa_id', perfil!.empresa_id!)
+      .eq('clave', 'ligero')
+      .single()
+
+    const { data: actualizado } = await operario
+      .from('tipos_vehiculo')
+      .update({ nombre: 'Hackeado' })
+      .eq('id', existente!.id)
+      .select()
+    expect(actualizado).toEqual([])
+
+    const { data: eliminado } = await operario
+      .from('tipos_vehiculo')
+      .delete()
+      .eq('id', existente!.id)
+      .select()
+    expect(eliminado).toEqual([])
+  })
+
+  // T030: a diferencia de tipos_vehiculo, aseguradoras no tiene siembra automática (FR-013) —
+  // se siembra una fila propia vía service_role para probar UPDATE/DELETE.
+  test('aseguradoras: un operario con solo "ver" no puede crear, editar ni eliminar (US2, FR-015)', async () => {
+    const admin = adminSupabaseClient()
+    const operario = await clienteAutenticado('operario-e2e@flotillas.local')
+    const {
+      data: { user }
+    } = await operario.auth.getUser()
+    const { data: perfil } = await operario
+      .from('usuarios')
+      .select('id, empresa_id')
+      .eq('auth_user_id', user!.id)
+      .single()
+
+    const { error: insertError } = await operario.from('aseguradoras').insert({
+      empresa_id: perfil!.empresa_id!,
+      razon_social: 'Intento Operario T030',
+      rfc: 'OPE010101AAA'
+    })
+    expect(insertError).not.toBeNull()
+    expect(insertError!.message).toMatch(/row-level security/i)
+
+    const { data: aseguradora } = await admin
+      .from('aseguradoras')
+      .insert({
+        empresa_id: perfil!.empresa_id!,
+        razon_social: `Aseguradora RLS T030 ${Date.now()}`,
+        rfc: 'RLS010101AAA'
+      })
+      .select('id')
+      .single()
+
+    const { data: actualizado } = await operario
+      .from('aseguradoras')
+      .update({ razon_social: 'Hackeado' })
+      .eq('id', aseguradora!.id)
+      .select()
+    expect(actualizado).toEqual([])
+
+    const { data: eliminado } = await operario
+      .from('aseguradoras')
+      .delete()
+      .eq('id', aseguradora!.id)
+      .select()
+    expect(eliminado).toEqual([])
+  })
+
+  // T041: igual que aseguradoras, `permisos` no tiene siembra automática (FR-013) — se
+  // siembra una fila propia vía service_role para probar UPDATE/DELETE.
+  test('permisos: un operario con solo "ver" no puede crear, editar ni eliminar (US3, FR-015)', async () => {
+    const admin = adminSupabaseClient()
+    const operario = await clienteAutenticado('operario-e2e@flotillas.local')
+    const {
+      data: { user }
+    } = await operario.auth.getUser()
+    const { data: perfil } = await operario
+      .from('usuarios')
+      .select('id, empresa_id')
+      .eq('auth_user_id', user!.id)
+      .single()
+
+    const { error: insertError } = await operario.from('permisos').insert({
+      empresa_id: perfil!.empresa_id!,
+      clave: `rls_t041_${Date.now()}`,
+      nombre: 'Intento Operario T041',
+      tipo: 'estatal'
+    })
+    expect(insertError).not.toBeNull()
+    expect(insertError!.message).toMatch(/row-level security/i)
+
+    const { data: permiso } = await admin
+      .from('permisos')
+      .insert({
+        empresa_id: perfil!.empresa_id!,
+        clave: `rls_t041_seed_${Date.now()}`,
+        nombre: 'Permiso RLS T041',
+        tipo: 'federal'
+      })
+      .select('id')
+      .single()
+
+    const { data: actualizado } = await operario
+      .from('permisos')
+      .update({ nombre: 'Hackeado' })
+      .eq('id', permiso!.id)
+      .select()
+    expect(actualizado).toEqual([])
+
+    const { data: eliminado } = await operario
+      .from('permisos')
+      .delete()
+      .eq('id', permiso!.id)
+      .select()
+    expect(eliminado).toEqual([])
   })
 })

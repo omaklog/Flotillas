@@ -21,9 +21,19 @@ Sigue el mismo lenguaje visual descrito en `../design-system.md`.
 | Listado de Operarios | Usuarios (US5/US9, `admin/usuarios/index.vue`) | `screens/listado-operarios.png` | `875c09687a8a456885a6e75bcce169bb` |
 | Gestión de Permisos | Permisos (US6, `admin/permisos/[id].vue`) | `screens/gestion-permisos.png` | `68461028366941c1bd3232c07cbeaeaf` |
 | Configuración de la Empresa | Configuración (US4, `admin/configuracion.vue`) | `screens/configuracion-empresa.png` | `0b536648558c49b69713fe6bf6aaf3cc` |
+| Administración de Catálogos | Catálogos Base (002, hub — referencia de patrón, no de contenido literal) | `screens/administracion-catalogos.png` | `4ef14f0eca2f46cfa61629f1c2c8aec5` |
+| Detalle de Catálogo: Marcas y Modelos | Catálogos Base (002, `admin/tipos-vehiculo`, `admin/aseguradoras`, `admin/permisos` — molde de tabla+búsqueda+acciones) | `screens/detalle-catalogo-marcas-modelos.png` | `4c90c0d8d1ed4f03815a8d15257dbec1` |
 
-Las 3 últimas se descargaron el 2026-08-07, vía el workaround de `curl` directo documentado en
-`../../CLAUDE.md` § "Design system compliance" (el MCP de Stitch tenía `tools/list` roto en ese
-momento).
+Las 3 anteriores a estas 2 últimas se descargaron el 2026-08-07, vía el workaround de `curl`
+directo documentado en `../../CLAUDE.md` § "Design system compliance" (el MCP de Stitch tenía
+`tools/list` roto en ese momento). Las 2 últimas (`administracion-catalogos.png`,
+`detalle-catalogo-marcas-modelos.png`) se generaron y descargaron el mismo día para Feature 002:
+**no** corresponden literalmente a Tipos de Vehículo/Aseguradoras/Permisos (Stitch las generó con
+datos de ejemplo genéricos — "Marcas y Modelos", "Toyota"/"Ford"/"Volvo" — y con columnas/filtros
+como `Status`/`Origin` que no aplican a esas 3 tablas, que no tienen columna `activo`). Se usan
+como referencia de **patrón** (breadcrumb, encabezado + botón "+ Nuevo", buscador + filtros,
+tabla con columna de Acciones con editar/eliminar, paginación), no de contenido literal — cada
+pantalla real (`tipos-vehiculo`, `aseguradoras`, `permisos`) adapta las columnas a sus propios
+campos (`data-model.md`) y omite el filtro de estado.
 
 Proyecto de origen en Stitch: `projects/4499192746969655413` ("FleetControl Enterprise").

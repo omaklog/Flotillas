@@ -1,4 +1,10 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
   graphql_public: {
@@ -46,12 +52,12 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'acciones_disponibles_modulo_clave_fkey'
-            columns: ['modulo_clave']
+            foreignKeyName: "acciones_disponibles_modulo_clave_fkey"
+            columns: ["modulo_clave"]
             isOneToOne: false
-            referencedRelation: 'modulos'
-            referencedColumns: ['clave']
-          }
+            referencedRelation: "modulos"
+            referencedColumns: ["clave"]
+          },
         ]
       }
       alertas: {
@@ -60,7 +66,7 @@ export type Database = {
           empresa_id: string
           entidad_id: string
           entidad_tipo: string
-          estado: Database['public']['Enums']['estado_alerta']
+          estado: Database["public"]["Enums"]["estado_alerta"]
           fecha_vencimiento: string
           id: string
           tipo: string
@@ -70,7 +76,7 @@ export type Database = {
           empresa_id: string
           entidad_id: string
           entidad_tipo: string
-          estado?: Database['public']['Enums']['estado_alerta']
+          estado?: Database["public"]["Enums"]["estado_alerta"]
           fecha_vencimiento: string
           id?: string
           tipo: string
@@ -80,19 +86,19 @@ export type Database = {
           empresa_id?: string
           entidad_id?: string
           entidad_tipo?: string
-          estado?: Database['public']['Enums']['estado_alerta']
+          estado?: Database["public"]["Enums"]["estado_alerta"]
           fecha_vencimiento?: string
           id?: string
           tipo?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'alertas_empresa_id_fkey'
-            columns: ['empresa_id']
+            foreignKeyName: "alertas_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
-            referencedRelation: 'empresas'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
         ]
       }
       archivos: {
@@ -104,7 +110,7 @@ export type Database = {
           id: string
           storage_path: string
           subido_por: string
-          tipo: Database['public']['Enums']['tipo_archivo']
+          tipo: Database["public"]["Enums"]["tipo_archivo"]
         }
         Insert: {
           created_at?: string
@@ -114,7 +120,7 @@ export type Database = {
           id?: string
           storage_path: string
           subido_por: string
-          tipo: Database['public']['Enums']['tipo_archivo']
+          tipo: Database["public"]["Enums"]["tipo_archivo"]
         }
         Update: {
           created_at?: string
@@ -124,23 +130,23 @@ export type Database = {
           id?: string
           storage_path?: string
           subido_por?: string
-          tipo?: Database['public']['Enums']['tipo_archivo']
+          tipo?: Database["public"]["Enums"]["tipo_archivo"]
         }
         Relationships: [
           {
-            foreignKeyName: 'archivos_empresa_id_fkey'
-            columns: ['empresa_id']
+            foreignKeyName: "archivos_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
-            referencedRelation: 'empresas'
-            referencedColumns: ['id']
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'archivos_subido_por_fkey'
-            columns: ['subido_por']
+            foreignKeyName: "archivos_subido_por_fkey"
+            columns: ["subido_por"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
         ]
       }
       aseguradoras: {
@@ -170,17 +176,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'aseguradoras_empresa_id_fkey'
-            columns: ['empresa_id']
+            foreignKeyName: "aseguradoras_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
-            referencedRelation: 'empresas'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
         ]
       }
       auditoria: {
         Row: {
-          accion: Database['public']['Enums']['accion_auditoria']
+          accion: Database["public"]["Enums"]["accion_auditoria"]
           created_at: string
           empresa_id: string | null
           entidad: string
@@ -191,7 +197,7 @@ export type Database = {
           valores_despues: Json | null
         }
         Insert: {
-          accion: Database['public']['Enums']['accion_auditoria']
+          accion: Database["public"]["Enums"]["accion_auditoria"]
           created_at?: string
           empresa_id?: string | null
           entidad: string
@@ -202,7 +208,7 @@ export type Database = {
           valores_despues?: Json | null
         }
         Update: {
-          accion?: Database['public']['Enums']['accion_auditoria']
+          accion?: Database["public"]["Enums"]["accion_auditoria"]
           created_at?: string
           empresa_id?: string | null
           entidad?: string
@@ -214,19 +220,19 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'auditoria_empresa_id_fkey'
-            columns: ['empresa_id']
+            foreignKeyName: "auditoria_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
-            referencedRelation: 'empresas'
-            referencedColumns: ['id']
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'auditoria_usuario_id_fkey'
-            columns: ['usuario_id']
+            foreignKeyName: "auditoria_usuario_id_fkey"
+            columns: ["usuario_id"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
         ]
       }
       cargas_combustible: {
@@ -237,7 +243,7 @@ export type Database = {
           creado_por: string
           created_at: string
           empresa_id: string
-          estado: Database['public']['Enums']['estado_registro']
+          estado: Database["public"]["Enums"]["estado_registro"]
           factura_archivo_id: string | null
           fecha: string
           id: string
@@ -253,7 +259,7 @@ export type Database = {
           creado_por: string
           created_at?: string
           empresa_id: string
-          estado?: Database['public']['Enums']['estado_registro']
+          estado?: Database["public"]["Enums"]["estado_registro"]
           factura_archivo_id?: string | null
           fecha: string
           id?: string
@@ -269,7 +275,7 @@ export type Database = {
           creado_por?: string
           created_at?: string
           empresa_id?: string
-          estado?: Database['public']['Enums']['estado_registro']
+          estado?: Database["public"]["Enums"]["estado_registro"]
           factura_archivo_id?: string | null
           fecha?: string
           id?: string
@@ -280,47 +286,47 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'cargas_combustible_creado_por_fkey'
-            columns: ['creado_por']
+            foreignKeyName: "cargas_combustible_creado_por_fkey"
+            columns: ["creado_por"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'cargas_combustible_empresa_id_fkey'
-            columns: ['empresa_id']
+            foreignKeyName: "cargas_combustible_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
-            referencedRelation: 'empresas'
-            referencedColumns: ['id']
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'cargas_combustible_producto_id_fkey'
-            columns: ['producto_id']
+            foreignKeyName: "cargas_combustible_producto_id_fkey"
+            columns: ["producto_id"]
             isOneToOne: false
-            referencedRelation: 'productos'
-            referencedColumns: ['id']
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'cargas_combustible_proveedor_id_fkey'
-            columns: ['proveedor_id']
+            foreignKeyName: "cargas_combustible_proveedor_id_fkey"
+            columns: ["proveedor_id"]
             isOneToOne: false
-            referencedRelation: 'proveedores'
-            referencedColumns: ['id']
+            referencedRelation: "proveedores"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'cargas_combustible_vehiculo_id_fkey'
-            columns: ['vehiculo_id']
+            foreignKeyName: "cargas_combustible_vehiculo_id_fkey"
+            columns: ["vehiculo_id"]
             isOneToOne: false
-            referencedRelation: 'vehiculos'
-            referencedColumns: ['id']
+            referencedRelation: "vehiculos"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'fk_cargas_combustible_factura_archivo'
-            columns: ['factura_archivo_id']
+            foreignKeyName: "fk_cargas_combustible_factura_archivo"
+            columns: ["factura_archivo_id"]
             isOneToOne: false
-            referencedRelation: 'archivos'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "archivos"
+            referencedColumns: ["id"]
+          },
         ]
       }
       checklist_items: {
@@ -350,19 +356,19 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'checklist_items_checklist_id_fkey'
-            columns: ['checklist_id']
+            foreignKeyName: "checklist_items_checklist_id_fkey"
+            columns: ["checklist_id"]
             isOneToOne: false
-            referencedRelation: 'checklists'
-            referencedColumns: ['id']
+            referencedRelation: "checklists"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'checklist_items_empresa_id_fkey'
-            columns: ['empresa_id']
+            foreignKeyName: "checklist_items_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
-            referencedRelation: 'empresas'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
         ]
       }
       checklists: {
@@ -372,7 +378,7 @@ export type Database = {
           fecha: string
           id: string
           responsable_id: string
-          resultado: Database['public']['Enums']['resultado_checklist']
+          resultado: Database["public"]["Enums"]["resultado_checklist"]
           tipo_vehiculo_id: string
           vehiculo_id: string
         }
@@ -382,7 +388,7 @@ export type Database = {
           fecha?: string
           id?: string
           responsable_id: string
-          resultado: Database['public']['Enums']['resultado_checklist']
+          resultado: Database["public"]["Enums"]["resultado_checklist"]
           tipo_vehiculo_id: string
           vehiculo_id: string
         }
@@ -392,39 +398,39 @@ export type Database = {
           fecha?: string
           id?: string
           responsable_id?: string
-          resultado?: Database['public']['Enums']['resultado_checklist']
+          resultado?: Database["public"]["Enums"]["resultado_checklist"]
           tipo_vehiculo_id?: string
           vehiculo_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'checklists_empresa_id_fkey'
-            columns: ['empresa_id']
+            foreignKeyName: "checklists_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
-            referencedRelation: 'empresas'
-            referencedColumns: ['id']
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'checklists_responsable_id_fkey'
-            columns: ['responsable_id']
+            foreignKeyName: "checklists_responsable_id_fkey"
+            columns: ["responsable_id"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'checklists_tipo_vehiculo_id_fkey'
-            columns: ['tipo_vehiculo_id']
+            foreignKeyName: "checklists_tipo_vehiculo_id_fkey"
+            columns: ["tipo_vehiculo_id"]
             isOneToOne: false
-            referencedRelation: 'tipos_vehiculo'
-            referencedColumns: ['id']
+            referencedRelation: "tipos_vehiculo"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'checklists_vehiculo_id_fkey'
-            columns: ['vehiculo_id']
+            foreignKeyName: "checklists_vehiculo_id_fkey"
+            columns: ["vehiculo_id"]
             isOneToOne: false
-            referencedRelation: 'vehiculos'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "vehiculos"
+            referencedColumns: ["id"]
+          },
         ]
       }
       conductores: {
@@ -442,7 +448,7 @@ export type Database = {
           nombre: string
           numero: string | null
           numero_licencia: string
-          tipo_licencia: Database['public']['Enums']['tipo_licencia']
+          tipo_licencia: Database["public"]["Enums"]["tipo_licencia"]
           updated_at: string
         }
         Insert: {
@@ -459,7 +465,7 @@ export type Database = {
           nombre: string
           numero?: string | null
           numero_licencia: string
-          tipo_licencia: Database['public']['Enums']['tipo_licencia']
+          tipo_licencia: Database["public"]["Enums"]["tipo_licencia"]
           updated_at?: string
         }
         Update: {
@@ -476,24 +482,24 @@ export type Database = {
           nombre?: string
           numero?: string | null
           numero_licencia?: string
-          tipo_licencia?: Database['public']['Enums']['tipo_licencia']
+          tipo_licencia?: Database["public"]["Enums"]["tipo_licencia"]
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'conductores_empresa_id_fkey'
-            columns: ['empresa_id']
+            foreignKeyName: "conductores_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
-            referencedRelation: 'empresas'
-            referencedColumns: ['id']
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'fk_conductores_licencia_archivo'
-            columns: ['licencia_archivo_id']
+            foreignKeyName: "fk_conductores_licencia_archivo"
+            columns: ["licencia_archivo_id"]
             isOneToOne: false
-            referencedRelation: 'archivos'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "archivos"
+            referencedColumns: ["id"]
+          },
         ]
       }
       empresas: {
@@ -510,8 +516,8 @@ export type Database = {
           telefono_movil: string | null
           telefono_oficina_1: string | null
           telefono_oficina_2: string | null
-          unidad_combustible: Database['public']['Enums']['unidad_combustible']
-          unidad_distancia: Database['public']['Enums']['unidad_distancia']
+          unidad_combustible: Database["public"]["Enums"]["unidad_combustible"]
+          unidad_distancia: Database["public"]["Enums"]["unidad_distancia"]
           updated_at: string
         }
         Insert: {
@@ -527,8 +533,8 @@ export type Database = {
           telefono_movil?: string | null
           telefono_oficina_1?: string | null
           telefono_oficina_2?: string | null
-          unidad_combustible?: Database['public']['Enums']['unidad_combustible']
-          unidad_distancia?: Database['public']['Enums']['unidad_distancia']
+          unidad_combustible?: Database["public"]["Enums"]["unidad_combustible"]
+          unidad_distancia?: Database["public"]["Enums"]["unidad_distancia"]
           updated_at?: string
         }
         Update: {
@@ -544,8 +550,8 @@ export type Database = {
           telefono_movil?: string | null
           telefono_oficina_1?: string | null
           telefono_oficina_2?: string | null
-          unidad_combustible?: Database['public']['Enums']['unidad_combustible']
-          unidad_distancia?: Database['public']['Enums']['unidad_distancia']
+          unidad_combustible?: Database["public"]["Enums"]["unidad_combustible"]
+          unidad_distancia?: Database["public"]["Enums"]["unidad_distancia"]
           updated_at?: string
         }
         Relationships: []
@@ -555,7 +561,9 @@ export type Database = {
           created_at: string
           empresa_id: string
           id: string
-          llanta_condicion: Database['public']['Enums']['condicion_llanta'] | null
+          llanta_condicion:
+            | Database["public"]["Enums"]["condicion_llanta"]
+            | null
           llanta_kilometraje: number | null
           llanta_marca: string | null
           llanta_medida: string | null
@@ -569,7 +577,9 @@ export type Database = {
           created_at?: string
           empresa_id: string
           id?: string
-          llanta_condicion?: Database['public']['Enums']['condicion_llanta'] | null
+          llanta_condicion?:
+            | Database["public"]["Enums"]["condicion_llanta"]
+            | null
           llanta_kilometraje?: number | null
           llanta_marca?: string | null
           llanta_medida?: string | null
@@ -583,7 +593,9 @@ export type Database = {
           created_at?: string
           empresa_id?: string
           id?: string
-          llanta_condicion?: Database['public']['Enums']['condicion_llanta'] | null
+          llanta_condicion?:
+            | Database["public"]["Enums"]["condicion_llanta"]
+            | null
           llanta_kilometraje?: number | null
           llanta_marca?: string | null
           llanta_medida?: string | null
@@ -595,26 +607,26 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'mantenimiento_detalles_empresa_id_fkey'
-            columns: ['empresa_id']
+            foreignKeyName: "mantenimiento_detalles_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
-            referencedRelation: 'empresas'
-            referencedColumns: ['id']
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'mantenimiento_detalles_mantenimiento_id_fkey'
-            columns: ['mantenimiento_id']
+            foreignKeyName: "mantenimiento_detalles_mantenimiento_id_fkey"
+            columns: ["mantenimiento_id"]
             isOneToOne: false
-            referencedRelation: 'mantenimientos'
-            referencedColumns: ['id']
+            referencedRelation: "mantenimientos"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'mantenimiento_detalles_producto_id_fkey'
-            columns: ['producto_id']
+            foreignKeyName: "mantenimiento_detalles_producto_id_fkey"
+            columns: ["producto_id"]
             isOneToOne: false
-            referencedRelation: 'productos'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "productos"
+            referencedColumns: ["id"]
+          },
         ]
       }
       mantenimientos: {
@@ -623,13 +635,13 @@ export type Database = {
           creado_por: string
           created_at: string
           empresa_id: string
-          estado: Database['public']['Enums']['estado_registro']
+          estado: Database["public"]["Enums"]["estado_registro"]
           factura_archivo_id: string | null
           fecha: string
           id: string
           notas: string | null
           proveedor_id: string
-          tipo: Database['public']['Enums']['tipo_mantenimiento']
+          tipo: Database["public"]["Enums"]["tipo_mantenimiento"]
           vehiculo_id: string
         }
         Insert: {
@@ -637,13 +649,13 @@ export type Database = {
           creado_por: string
           created_at?: string
           empresa_id: string
-          estado?: Database['public']['Enums']['estado_registro']
+          estado?: Database["public"]["Enums"]["estado_registro"]
           factura_archivo_id?: string | null
           fecha: string
           id?: string
           notas?: string | null
           proveedor_id: string
-          tipo: Database['public']['Enums']['tipo_mantenimiento']
+          tipo: Database["public"]["Enums"]["tipo_mantenimiento"]
           vehiculo_id: string
         }
         Update: {
@@ -651,51 +663,51 @@ export type Database = {
           creado_por?: string
           created_at?: string
           empresa_id?: string
-          estado?: Database['public']['Enums']['estado_registro']
+          estado?: Database["public"]["Enums"]["estado_registro"]
           factura_archivo_id?: string | null
           fecha?: string
           id?: string
           notas?: string | null
           proveedor_id?: string
-          tipo?: Database['public']['Enums']['tipo_mantenimiento']
+          tipo?: Database["public"]["Enums"]["tipo_mantenimiento"]
           vehiculo_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'fk_mantenimientos_factura_archivo'
-            columns: ['factura_archivo_id']
+            foreignKeyName: "fk_mantenimientos_factura_archivo"
+            columns: ["factura_archivo_id"]
             isOneToOne: false
-            referencedRelation: 'archivos'
-            referencedColumns: ['id']
+            referencedRelation: "archivos"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'mantenimientos_creado_por_fkey'
-            columns: ['creado_por']
+            foreignKeyName: "mantenimientos_creado_por_fkey"
+            columns: ["creado_por"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'mantenimientos_empresa_id_fkey'
-            columns: ['empresa_id']
+            foreignKeyName: "mantenimientos_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
-            referencedRelation: 'empresas'
-            referencedColumns: ['id']
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'mantenimientos_proveedor_id_fkey'
-            columns: ['proveedor_id']
+            foreignKeyName: "mantenimientos_proveedor_id_fkey"
+            columns: ["proveedor_id"]
             isOneToOne: false
-            referencedRelation: 'proveedores'
-            referencedColumns: ['id']
+            referencedRelation: "proveedores"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'mantenimientos_vehiculo_id_fkey'
-            columns: ['vehiculo_id']
+            foreignKeyName: "mantenimientos_vehiculo_id_fkey"
+            columns: ["vehiculo_id"]
             isOneToOne: false
-            referencedRelation: 'vehiculos'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "vehiculos"
+            referencedColumns: ["id"]
+          },
         ]
       }
       modulos: {
@@ -723,7 +735,8 @@ export type Database = {
           empresa_id: string
           id: string
           nombre: string
-          tipo: Database['public']['Enums']['tipo_permiso']
+          tipo: Database["public"]["Enums"]["tipo_permiso"]
+          updated_at: string
         }
         Insert: {
           clave: string
@@ -731,7 +744,8 @@ export type Database = {
           empresa_id: string
           id?: string
           nombre: string
-          tipo: Database['public']['Enums']['tipo_permiso']
+          tipo: Database["public"]["Enums"]["tipo_permiso"]
+          updated_at?: string
         }
         Update: {
           clave?: string
@@ -739,16 +753,17 @@ export type Database = {
           empresa_id?: string
           id?: string
           nombre?: string
-          tipo?: Database['public']['Enums']['tipo_permiso']
+          tipo?: Database["public"]["Enums"]["tipo_permiso"]
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'permisos_empresa_id_fkey'
-            columns: ['empresa_id']
+            foreignKeyName: "permisos_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
-            referencedRelation: 'empresas'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
         ]
       }
       productos: {
@@ -757,7 +772,7 @@ export type Database = {
           empresa_id: string
           id: string
           nombre: string
-          tipo: Database['public']['Enums']['tipo_producto']
+          tipo: Database["public"]["Enums"]["tipo_producto"]
           unidad: string | null
         }
         Insert: {
@@ -765,7 +780,7 @@ export type Database = {
           empresa_id: string
           id?: string
           nombre: string
-          tipo: Database['public']['Enums']['tipo_producto']
+          tipo: Database["public"]["Enums"]["tipo_producto"]
           unidad?: string | null
         }
         Update: {
@@ -773,17 +788,17 @@ export type Database = {
           empresa_id?: string
           id?: string
           nombre?: string
-          tipo?: Database['public']['Enums']['tipo_producto']
+          tipo?: Database["public"]["Enums"]["tipo_producto"]
           unidad?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: 'productos_empresa_id_fkey'
-            columns: ['empresa_id']
+            foreignKeyName: "productos_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
-            referencedRelation: 'empresas'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
         ]
       }
       proveedores: {
@@ -834,12 +849,12 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'proveedores_empresa_id_fkey'
-            columns: ['empresa_id']
+            foreignKeyName: "proveedores_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
-            referencedRelation: 'empresas'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
         ]
       }
       servicios_obligatorios: {
@@ -850,7 +865,7 @@ export type Database = {
           fecha_realizado: string
           fecha_vencimiento: string
           id: string
-          tipo: Database['public']['Enums']['tipo_servicio_obligatorio']
+          tipo: Database["public"]["Enums"]["tipo_servicio_obligatorio"]
           updated_at: string
           vehiculo_id: string
         }
@@ -861,7 +876,7 @@ export type Database = {
           fecha_realizado: string
           fecha_vencimiento: string
           id?: string
-          tipo: Database['public']['Enums']['tipo_servicio_obligatorio']
+          tipo: Database["public"]["Enums"]["tipo_servicio_obligatorio"]
           updated_at?: string
           vehiculo_id: string
         }
@@ -872,32 +887,32 @@ export type Database = {
           fecha_realizado?: string
           fecha_vencimiento?: string
           id?: string
-          tipo?: Database['public']['Enums']['tipo_servicio_obligatorio']
+          tipo?: Database["public"]["Enums"]["tipo_servicio_obligatorio"]
           updated_at?: string
           vehiculo_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'fk_servicios_obligatorios_archivo'
-            columns: ['archivo_id']
+            foreignKeyName: "fk_servicios_obligatorios_archivo"
+            columns: ["archivo_id"]
             isOneToOne: false
-            referencedRelation: 'archivos'
-            referencedColumns: ['id']
+            referencedRelation: "archivos"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'servicios_obligatorios_empresa_id_fkey'
-            columns: ['empresa_id']
+            foreignKeyName: "servicios_obligatorios_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
-            referencedRelation: 'empresas'
-            referencedColumns: ['id']
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'servicios_obligatorios_vehiculo_id_fkey'
-            columns: ['vehiculo_id']
+            foreignKeyName: "servicios_obligatorios_vehiculo_id_fkey"
+            columns: ["vehiculo_id"]
             isOneToOne: false
-            referencedRelation: 'vehiculos'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "vehiculos"
+            referencedColumns: ["id"]
+          },
         ]
       }
       tipos_vehiculo: {
@@ -907,6 +922,7 @@ export type Database = {
           empresa_id: string
           id: string
           nombre: string
+          updated_at: string
         }
         Insert: {
           clave: string
@@ -914,6 +930,7 @@ export type Database = {
           empresa_id: string
           id?: string
           nombre: string
+          updated_at?: string
         }
         Update: {
           clave?: string
@@ -921,15 +938,16 @@ export type Database = {
           empresa_id?: string
           id?: string
           nombre?: string
+          updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'tipos_vehiculo_empresa_id_fkey'
-            columns: ['empresa_id']
+            foreignKeyName: "tipos_vehiculo_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
-            referencedRelation: 'empresas'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
         ]
       }
       usuario_permisos: {
@@ -962,33 +980,33 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'usuario_permisos_empresa_id_fkey'
-            columns: ['empresa_id']
+            foreignKeyName: "usuario_permisos_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
-            referencedRelation: 'empresas'
-            referencedColumns: ['id']
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'usuario_permisos_modulo_clave_fkey'
-            columns: ['modulo_clave']
+            foreignKeyName: "usuario_permisos_modulo_clave_fkey"
+            columns: ["modulo_clave"]
             isOneToOne: false
-            referencedRelation: 'modulos'
-            referencedColumns: ['clave']
+            referencedRelation: "modulos"
+            referencedColumns: ["clave"]
           },
           {
-            foreignKeyName: 'usuario_permisos_otorgado_por_fkey'
-            columns: ['otorgado_por']
+            foreignKeyName: "usuario_permisos_otorgado_por_fkey"
+            columns: ["otorgado_por"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'usuario_permisos_usuario_id_fkey'
-            columns: ['usuario_id']
+            foreignKeyName: "usuario_permisos_usuario_id_fkey"
+            columns: ["usuario_id"]
             isOneToOne: false
-            referencedRelation: 'usuarios'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
         ]
       }
       usuarios: {
@@ -1000,7 +1018,7 @@ export type Database = {
           empresa_id: string | null
           id: string
           nombre: string
-          rol: Database['public']['Enums']['rol_usuario']
+          rol: Database["public"]["Enums"]["rol_usuario"]
           updated_at: string
         }
         Insert: {
@@ -1011,7 +1029,7 @@ export type Database = {
           empresa_id?: string | null
           id?: string
           nombre: string
-          rol?: Database['public']['Enums']['rol_usuario']
+          rol?: Database["public"]["Enums"]["rol_usuario"]
           updated_at?: string
         }
         Update: {
@@ -1022,17 +1040,17 @@ export type Database = {
           empresa_id?: string | null
           id?: string
           nombre?: string
-          rol?: Database['public']['Enums']['rol_usuario']
+          rol?: Database["public"]["Enums"]["rol_usuario"]
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'usuarios_empresa_id_fkey'
-            columns: ['empresa_id']
+            foreignKeyName: "usuarios_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
-            referencedRelation: 'empresas'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
         ]
       }
       vehiculo_permisos: {
@@ -1062,26 +1080,26 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'vehiculo_permisos_empresa_id_fkey'
-            columns: ['empresa_id']
+            foreignKeyName: "vehiculo_permisos_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
-            referencedRelation: 'empresas'
-            referencedColumns: ['id']
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'vehiculo_permisos_permiso_id_fkey'
-            columns: ['permiso_id']
+            foreignKeyName: "vehiculo_permisos_permiso_id_fkey"
+            columns: ["permiso_id"]
             isOneToOne: false
-            referencedRelation: 'permisos'
-            referencedColumns: ['id']
+            referencedRelation: "permisos"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'vehiculo_permisos_vehiculo_id_fkey'
-            columns: ['vehiculo_id']
+            foreignKeyName: "vehiculo_permisos_vehiculo_id_fkey"
+            columns: ["vehiculo_id"]
             isOneToOne: false
-            referencedRelation: 'vehiculos'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "vehiculos"
+            referencedColumns: ["id"]
+          },
         ]
       }
       vehiculos: {
@@ -1102,7 +1120,7 @@ export type Database = {
           numero_motor: string | null
           numero_poliza: string | null
           numero_serie: string | null
-          placa: string | null
+          placa: string
           poliza_archivo_id: string | null
           tipo_vehiculo_id: string
           updated_at: string
@@ -1124,7 +1142,7 @@ export type Database = {
           numero_motor?: string | null
           numero_poliza?: string | null
           numero_serie?: string | null
-          placa?: string | null
+          placa: string
           poliza_archivo_id?: string | null
           tipo_vehiculo_id: string
           updated_at?: string
@@ -1146,40 +1164,40 @@ export type Database = {
           numero_motor?: string | null
           numero_poliza?: string | null
           numero_serie?: string | null
-          placa?: string | null
+          placa?: string
           poliza_archivo_id?: string | null
           tipo_vehiculo_id?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'fk_vehiculos_poliza_archivo'
-            columns: ['poliza_archivo_id']
+            foreignKeyName: "fk_vehiculos_poliza_archivo"
+            columns: ["poliza_archivo_id"]
             isOneToOne: false
-            referencedRelation: 'archivos'
-            referencedColumns: ['id']
+            referencedRelation: "archivos"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'vehiculos_aseguradora_id_fkey'
-            columns: ['aseguradora_id']
+            foreignKeyName: "vehiculos_aseguradora_id_fkey"
+            columns: ["aseguradora_id"]
             isOneToOne: false
-            referencedRelation: 'aseguradoras'
-            referencedColumns: ['id']
+            referencedRelation: "aseguradoras"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'vehiculos_empresa_id_fkey'
-            columns: ['empresa_id']
+            foreignKeyName: "vehiculos_empresa_id_fkey"
+            columns: ["empresa_id"]
             isOneToOne: false
-            referencedRelation: 'empresas'
-            referencedColumns: ['id']
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'vehiculos_tipo_vehiculo_id_fkey'
-            columns: ['tipo_vehiculo_id']
+            foreignKeyName: "vehiculos_tipo_vehiculo_id_fkey"
+            columns: ["tipo_vehiculo_id"]
             isOneToOne: false
-            referencedRelation: 'tipos_vehiculo'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "tipos_vehiculo"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -1188,7 +1206,7 @@ export type Database = {
     }
     Functions: {
       listar_operarios_propios: {
-        Args: never
+        Args: Record<PropertyKey, never>
         Returns: {
           activo: boolean
           correo: string
@@ -1200,21 +1218,34 @@ export type Database = {
       }
     }
     Enums: {
-      accion_auditoria: 'crear' | 'editar' | 'eliminar' | 'cancelar' | 'desactivar' | 'reactivar'
-      condicion_llanta: 'nueva' | 'renovada'
-      estado_alerta: 'pendiente' | 'enviada' | 'resuelta'
-      estado_registro: 'activo' | 'cancelado'
-      resultado_checklist: 'aprobado' | 'con_observaciones'
-      rol_usuario: 'superusuario' | 'admin' | 'operario'
-      tipo_archivo: 'poliza' | 'licencia' | 'factura'
-      tipo_licencia: 'federal' | 'local'
-      tipo_mantenimiento: 'correctivo' | 'preventivo'
-      tipo_permiso: 'estatal' | 'federal'
-      tipo_producto: 'refaccion' | 'combustible' | 'servicio' | 'llanta' | 'consumible'
+      accion_auditoria:
+        | "crear"
+        | "editar"
+        | "eliminar"
+        | "cancelar"
+        | "desactivar"
+        | "reactivar"
+      condicion_llanta: "nueva" | "renovada"
+      estado_alerta: "pendiente" | "enviada" | "resuelta"
+      estado_registro: "activo" | "cancelado"
+      resultado_checklist: "aprobado" | "con_observaciones"
+      rol_usuario: "superusuario" | "admin" | "operario"
+      tipo_archivo: "poliza" | "licencia" | "factura"
+      tipo_licencia: "federal" | "local"
+      tipo_mantenimiento: "correctivo" | "preventivo"
+      tipo_permiso: "estatal" | "federal"
+      tipo_producto:
+        | "refaccion"
+        | "combustible"
+        | "servicio"
+        | "llanta"
+        | "consumible"
       tipo_servicio_obligatorio:
-        'revision_fisico_mecanica' | 'verificacion_ambiental' | 'renovacion_aditamentos'
-      unidad_combustible: 'litros' | 'galones'
-      unidad_distancia: 'km' | 'millas'
+        | "revision_fisico_mecanica"
+        | "verificacion_ambiental"
+        | "renovacion_aditamentos"
+      unidad_combustible: "litros" | "galones"
+      unidad_distancia: "km" | "millas"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1222,31 +1253,33 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
-    : never) = never
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
-    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -1255,22 +1288,23 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-    : never) = never
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -1279,22 +1313,23 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-    : never) = never
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -1303,60 +1338,76 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    keyof DefaultSchema['Enums'] | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
-    : never) = never
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
-    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    keyof DefaultSchema['CompositeTypes'] | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
-    : never) = never
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
-    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
   graphql_public: {
-    Enums: {}
+    Enums: {},
   },
   public: {
     Enums: {
-      accion_auditoria: ['crear', 'editar', 'eliminar', 'cancelar', 'desactivar', 'reactivar'],
-      condicion_llanta: ['nueva', 'renovada'],
-      estado_alerta: ['pendiente', 'enviada', 'resuelta'],
-      estado_registro: ['activo', 'cancelado'],
-      resultado_checklist: ['aprobado', 'con_observaciones'],
-      rol_usuario: ['superusuario', 'admin', 'operario'],
-      tipo_archivo: ['poliza', 'licencia', 'factura'],
-      tipo_licencia: ['federal', 'local'],
-      tipo_mantenimiento: ['correctivo', 'preventivo'],
-      tipo_permiso: ['estatal', 'federal'],
-      tipo_producto: ['refaccion', 'combustible', 'servicio', 'llanta', 'consumible'],
-      tipo_servicio_obligatorio: [
-        'revision_fisico_mecanica',
-        'verificacion_ambiental',
-        'renovacion_aditamentos'
+      accion_auditoria: [
+        "crear",
+        "editar",
+        "eliminar",
+        "cancelar",
+        "desactivar",
+        "reactivar",
       ],
-      unidad_combustible: ['litros', 'galones'],
-      unidad_distancia: ['km', 'millas']
-    }
-  }
+      condicion_llanta: ["nueva", "renovada"],
+      estado_alerta: ["pendiente", "enviada", "resuelta"],
+      estado_registro: ["activo", "cancelado"],
+      resultado_checklist: ["aprobado", "con_observaciones"],
+      rol_usuario: ["superusuario", "admin", "operario"],
+      tipo_archivo: ["poliza", "licencia", "factura"],
+      tipo_licencia: ["federal", "local"],
+      tipo_mantenimiento: ["correctivo", "preventivo"],
+      tipo_permiso: ["estatal", "federal"],
+      tipo_producto: [
+        "refaccion",
+        "combustible",
+        "servicio",
+        "llanta",
+        "consumible",
+      ],
+      tipo_servicio_obligatorio: [
+        "revision_fisico_mecanica",
+        "verificacion_ambiental",
+        "renovacion_aditamentos",
+      ],
+      unidad_combustible: ["litros", "galones"],
+      unidad_distancia: ["km", "millas"],
+    },
+  },
 } as const
+

@@ -1185,3 +1185,175 @@ test.describe('Foto del vehículo (FR-023 a FR-025)', () => {
     expect(archivoV1Aun).not.toBeNull()
   })
 })
+
+test.describe('Campos adicionales del vehículo y detalle agrupado en tarjetas (FR-001, FR-026)', () => {
+  test.use({ storageState: 'tests/e2e/.auth/admin.json' })
+
+  test('T066: alta capturando VIN, kilometraje actual, combustible y transmisión deja esos datos visibles en el detalle', async ({
+    page
+  }) => {
+    const marca = `Scania T066 ${Date.now()}`
+    const placa = `T066-${Date.now()}`
+    const vin = `VIN${Date.now()}`
+    const kilometraje = '125000'
+    const combustible = 'Diésel'
+    const transmision = 'Automatizada'
+
+    await page.goto('/admin/vehiculos/nuevo')
+    await esperarHidratacion(page)
+    await page.getByLabel('Marca', { exact: true }).fill(marca)
+    await page.getByLabel('Modelo', { exact: true }).fill('R450')
+    await page.getByLabel('Placa', { exact: true }).fill(placa)
+    await page.getByLabel('VIN', { exact: true }).fill(vin)
+    await page.getByLabel('Kilometraje actual', { exact: true }).fill(kilometraje)
+    await page.getByLabel('Combustible', { exact: true }).fill(combustible)
+    await page.getByLabel('Transmisión', { exact: true }).fill(transmision)
+    await page.getByRole('combobox', { name: 'Tipo de vehículo' }).fill('Vehículo ligero')
+    await page.getByRole('option', { name: 'Vehículo ligero', exact: true }).click()
+    await page.getByTestId('submit-btn').click()
+
+    await page.waitForURL((url) => url.pathname === '/admin/vehiculos', { timeout: 10_000 })
+
+    const admin = adminSupabaseClient()
+    const { data: vehiculo } = await admin
+      .from('vehiculos')
+      .select('id, vin, kilometraje_actual, combustible, transmision')
+      .eq('placa', placa)
+      .single()
+    expect(vehiculo!.vin).toBe(vin)
+    expect(vehiculo!.kilometraje_actual).toBe(125000)
+    expect(vehiculo!.combustible).toBe(combustible)
+    expect(vehiculo!.transmision).toBe(transmision)
+
+    await page.goto(`/admin/vehiculos/${vehiculo!.id}`)
+    await esperarHidratacion(page)
+    await expect(page.getByTestId('tarjeta-registro').getByText(vin)).toBeVisible()
+    await expect(page.getByTestId('tarjeta-registro').getByText('125000')).toBeVisible()
+    await expect(page.getByTestId('tarjeta-especificaciones').getByText(combustible)).toBeVisible()
+    await expect(page.getByTestId('tarjeta-especificaciones').getByText(transmision)).toBeVisible()
+  })
+
+  test('T067: el detalle de solo lectura agrupa los campos en las 4 tarjetas de FR-026', async ({
+    page
+  }) => {
+    const { admin, empresaId, tipoVehiculoId } = await empresaYTipoAdmin()
+    const sufijo = Date.now()
+    const razonSocial = `Aseguradora T067 ${sufijo}`
+    await admin
+      .from('aseguradoras')
+      .insert({ empresa_id: empresaId, razon_social: razonSocial, rfc: `T067${sufijo}` })
+    const { data: aseguradora } = await admin
+      .from('aseguradoras')
+      .select('id')
+      .eq('razon_social', razonSocial)
+      .single()
+
+    const marca = `Foton T067 ${sufijo}`
+    const { data: vehiculo } = await admin
+      .from('vehiculos')
+      .insert({
+        empresa_id: empresaId,
+        marca,
+        modelo: 'Aumark',
+        placa: `T067-${sufijo}`,
+        color: 'Blanco',
+        anio: 2024,
+        numero_serie: `SERIE${sufijo}`,
+        numero_motor: `MOTOR${sufijo}`,
+        capacidad_carga: 3500,
+        numero_ejes: 2,
+        vin: `VIN${sufijo}`,
+        kilometraje_actual: 42000,
+        combustible: 'Gasolina',
+        transmision: 'Manual',
+        tipo_vehiculo_id: tipoVehiculoId,
+        aseguradora_id: aseguradora!.id,
+        numero_poliza: `POL-${sufijo}`,
+        fecha_vencimiento_poliza: fechaEnDias(120)
+      })
+      .select('id')
+      .single()
+
+    await page.goto(`/admin/vehiculos/${vehiculo!.id}`)
+    await esperarHidratacion(page)
+
+    const identificacion = page.getByTestId('tarjeta-identificacion')
+    await expect(identificacion).toBeVisible()
+    await expect(identificacion.getByText(marca)).toBeVisible()
+    await expect(identificacion.getByText('Aumark')).toBeVisible()
+    await expect(identificacion.getByText('2024')).toBeVisible()
+    await expect(identificacion.getByText('Blanco')).toBeVisible()
+    await expect(identificacion.getByText('Vehículo ligero')).toBeVisible()
+
+    const registro = page.getByTestId('tarjeta-registro')
+    await expect(registro).toBeVisible()
+    await expect(registro.getByText(`T067-${sufijo}`)).toBeVisible()
+    await expect(registro.getByText(`VIN${sufijo}`)).toBeVisible()
+    await expect(registro.getByText(`SERIE${sufijo}`)).toBeVisible()
+    await expect(registro.getByText(`MOTOR${sufijo}`)).toBeVisible()
+    await expect(registro.getByText('42000')).toBeVisible()
+
+    const especificaciones = page.getByTestId('tarjeta-especificaciones')
+    await expect(especificaciones).toBeVisible()
+    await expect(especificaciones.getByText('Gasolina')).toBeVisible()
+    await expect(especificaciones.getByText('Manual')).toBeVisible()
+    await expect(especificaciones.getByText('3500')).toBeVisible()
+
+    const seguroPoliza = page.getByTestId('tarjeta-seguro-poliza')
+    await expect(seguroPoliza).toBeVisible()
+    await expect(seguroPoliza.getByText(razonSocial)).toBeVisible()
+    await expect(seguroPoliza.getByText(`POL-${sufijo}`)).toBeVisible()
+
+    // Los datos de identificación no deben duplicarse en la tarjeta de registro (agrupación
+    // real, no solo etiquetas nuevas sobre la misma cuadrícula plana).
+    await expect(registro.getByText(marca)).toHaveCount(0)
+  })
+
+  test('T068: editar VIN, kilometraje actual, combustible y transmisión de un vehículo existente guarda los cambios', async ({
+    page
+  }) => {
+    const { admin, empresaId, tipoVehiculoId } = await empresaYTipoAdmin()
+    const sufijo = Date.now()
+    const { data: vehiculo } = await admin
+      .from('vehiculos')
+      .insert({
+        empresa_id: empresaId,
+        marca: `Hino T068 ${sufijo}`,
+        modelo: '500',
+        placa: `T068-${sufijo}`,
+        tipo_vehiculo_id: tipoVehiculoId
+      })
+      .select('id')
+      .single()
+
+    const nuevoVin = `EDITVIN${sufijo}`
+    const nuevoKilometraje = '80000'
+    const nuevoCombustible = 'Diésel'
+    const nuevaTransmision = 'Automática'
+
+    await page.goto(`/admin/vehiculos/${vehiculo!.id}/editar`)
+    await esperarHidratacion(page)
+    await page.getByLabel('VIN', { exact: true }).fill(nuevoVin)
+    await page.getByLabel('Kilometraje actual', { exact: true }).fill(nuevoKilometraje)
+    await page.getByLabel('Combustible', { exact: true }).fill(nuevoCombustible)
+    await page.getByLabel('Transmisión', { exact: true }).fill(nuevaTransmision)
+    await page.getByTestId('submit-btn').click()
+
+    await page.waitForURL((url) => url.pathname === `/admin/vehiculos/${vehiculo!.id}`, {
+      timeout: 10_000
+    })
+
+    const { data: actualizado } = await admin
+      .from('vehiculos')
+      .select('vin, kilometraje_actual, combustible, transmision')
+      .eq('id', vehiculo!.id)
+      .single()
+    expect(actualizado!.vin).toBe(nuevoVin)
+    expect(actualizado!.kilometraje_actual).toBe(80000)
+    expect(actualizado!.combustible).toBe(nuevoCombustible)
+    expect(actualizado!.transmision).toBe(nuevaTransmision)
+
+    await expect(page.getByTestId('tarjeta-registro').getByText(nuevoVin)).toBeVisible()
+    await expect(page.getByTestId('tarjeta-especificaciones').getByText(nuevoCombustible)).toBeVisible()
+  })
+})

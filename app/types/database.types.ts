@@ -1109,11 +1109,13 @@ export type Database = {
           baja: boolean
           capacidad_carga: number | null
           color: string | null
+          combustible: string | null
           created_at: string
           empresa_id: string
           fecha_vencimiento_poliza: string | null
           foto_archivo_id: string | null
           id: string
+          kilometraje_actual: number | null
           marca: string
           modelo: string
           motivo_baja: string | null
@@ -1124,7 +1126,9 @@ export type Database = {
           placa: string
           poliza_archivo_id: string | null
           tipo_vehiculo_id: string
+          transmision: string | null
           updated_at: string
+          vin: string | null
         }
         Insert: {
           anio?: number | null
@@ -1132,11 +1136,13 @@ export type Database = {
           baja?: boolean
           capacidad_carga?: number | null
           color?: string | null
+          combustible?: string | null
           created_at?: string
           empresa_id: string
           fecha_vencimiento_poliza?: string | null
           foto_archivo_id?: string | null
           id?: string
+          kilometraje_actual?: number | null
           marca: string
           modelo: string
           motivo_baja?: string | null
@@ -1147,7 +1153,9 @@ export type Database = {
           placa: string
           poliza_archivo_id?: string | null
           tipo_vehiculo_id: string
+          transmision?: string | null
           updated_at?: string
+          vin?: string | null
         }
         Update: {
           anio?: number | null
@@ -1155,11 +1163,13 @@ export type Database = {
           baja?: boolean
           capacidad_carga?: number | null
           color?: string | null
+          combustible?: string | null
           created_at?: string
           empresa_id?: string
           fecha_vencimiento_poliza?: string | null
           foto_archivo_id?: string | null
           id?: string
+          kilometraje_actual?: number | null
           marca?: string
           modelo?: string
           motivo_baja?: string | null
@@ -1170,7 +1180,9 @@ export type Database = {
           placa?: string
           poliza_archivo_id?: string | null
           tipo_vehiculo_id?: string
+          transmision?: string | null
           updated_at?: string
+          vin?: string | null
         }
         Relationships: [
           {

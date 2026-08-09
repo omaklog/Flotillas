@@ -40,6 +40,18 @@ reutilizarán Conductores, Combustible y Mantenimiento.
 - Q: ¿La foto del vehículo necesita el mismo historial de versiones que la póliza? → A: No — solo
   la foto vigente; un puntero `foto_archivo_id` en `vehiculos` que se reemplaza al subir una
   nueva (el objeto anterior en Storage se elimina), sin conservar versiones anteriores.
+- Q: La implementación de la vista de detalle de solo lectura (US-3.7) usa una sola tarjeta con
+  todos los campos en una cuadrícula uniforme; el mockup (`detalle-vehiculo-datos-generales.png`)
+  agrupa los datos en tarjetas separadas ("Identificación del Vehículo" con la foto,
+  "Registro y Seguimiento") en dos columnas. ¿Se ajusta el layout para reflejar esa agrupación? →
+  A: Sí — reorganizar en tarjetas agrupadas siguiendo el mockup (ver FR-026).
+- Q: El mockup incluye VIN y Kilometraje Actual en "Registro y Seguimiento", y Combustible y
+  Transmisión en "Especificaciones Técnicas" — atributos del vehículo que hoy no existen en el
+  modelo. ¿Se agregan? → A: Sí, los 4 como columnas nuevas opcionales de `vehiculos` (texto libre
+  para VIN/Combustible/Transmisión, numérico para Kilometraje) — datos intrínsecos del vehículo
+  que no dependen de otras features, a diferencia de "Conductor Asignado" y "Último
+  Mantenimiento" del mockup, que sí quedan fuera de alcance (dependen de Conductores/
+  Mantenimiento, features que no existen todavía — ver "Fuera de Alcance").
 
 ## Actores
 
@@ -137,6 +149,9 @@ que queda vinculada como vigente.
 6. **Given** el administrador está en el formulario de alta, **When** además adjunta una foto
    (JPG o PNG, dentro del límite de 10 MB), **Then** el vehículo se crea con esa foto visible en
    su detalle (Clarifications, sesión 2026-08-08).
+7. **Given** el administrador está en el formulario de alta, **When** además captura VIN,
+   kilometraje actual, combustible y/o transmisión (todos opcionales), **Then** el vehículo se
+   crea con esos datos visibles en su detalle (Clarifications, sesión 2026-08-08).
 
 ---
 
@@ -293,8 +308,12 @@ usado por US-3.3.
 **Acceptance Scenarios**:
 
 1. **Given** el administrador está en el listado de vehículos, **When** hace clic en un vehículo,
-   **Then** se abre su detalle en modo solo lectura, con sus datos generales, foto (si tiene),
-   estado de póliza, historial de póliza y permisos asignados visibles, y ningún campo editable.
+   **Then** se abre su detalle en modo solo lectura, con sus datos agrupados en tarjetas
+   siguiendo la referencia de Stitch (FR-026): "Identificación del Vehículo" (foto, marca,
+   modelo, año, color, tipo), "Registro y Seguimiento" (placa, VIN, número de serie, número de
+   motor, kilometraje actual), "Especificaciones Técnicas" (combustible, transmisión, número de
+   ejes, capacidad de carga) y "Seguro y Póliza" (aseguradora, número de póliza, vencimiento,
+   estado de vigencia) — y ningún campo editable.
 2. **Given** el administrador está viendo el detalle de un vehículo, **When** usa la acción
    "Editar", **Then** accede al formulario editable con los datos del vehículo precargados (mismo
    formulario de US-3.3).
@@ -339,8 +358,10 @@ usado por US-3.3.
 
 - **FR-001**: El administrador MUST poder dar de alta un vehículo capturando marca, modelo, placa
   (obligatoria), color, número de serie, número de motor, capacidad de carga, año, número de
-  ejes, tipo de vehículo (obligatorio, del catálogo de Catálogos Base), aseguradora (del catálogo
-  de Catálogos Base), número de póliza y fecha de vencimiento de póliza.
+  ejes, VIN, kilometraje actual, combustible, transmisión (los últimos cuatro opcionales,
+  Clarifications sesión 2026-08-08), tipo de vehículo (obligatorio, del catálogo de Catálogos
+  Base), aseguradora (del catálogo de Catálogos Base), número de póliza y fecha de vencimiento de
+  póliza.
 - **FR-002**: El sistema MUST validar que la placa capturada no esté ya en uso por otro vehículo
   de la misma empresa, marcándolo en el formulario antes de enviar, además del `UNIQUE(empresa_id,
   placa)` de respaldo en base de datos.
@@ -406,16 +427,25 @@ usado por US-3.3.
   (Clarifications, sesión 2026-08-08).
 - **FR-025**: El sistema MUST rechazar archivos de foto que no sean JPG o PNG, o que excedan 10
   MB, antes de intentar subirlos (mismo criterio que FR-004 para la póliza).
+- **FR-026**: El detalle de solo lectura de un vehículo (US-3.7) MUST agrupar sus datos en
+  tarjetas siguiendo la referencia de Stitch (`detalle-vehiculo-datos-generales.png`), no una
+  sola tarjeta con todos los campos en una cuadrícula uniforme: "Identificación del Vehículo"
+  (foto, marca, modelo, año, color, tipo de vehículo), "Registro y Seguimiento" (placa, VIN,
+  número de serie, número de motor, kilometraje actual), "Especificaciones Técnicas"
+  (combustible, transmisión, número de ejes, capacidad de carga), y "Seguro y Póliza"
+  (aseguradora, número de póliza, fecha de vencimiento, estado de vigencia) — esta última en vez
+  de "Estado Operativo" del mockup, que no aplica (Clarifications, sesión 2026-08-08).
 
 ### Key Entities
 
 - **Vehículo**: entidad central de esta feature. Atributos: marca, modelo, placa (única por
   empresa), color, número de serie, número de motor, capacidad de carga, año, número de ejes,
-  tipo de vehículo (referencia a Catálogos Base), aseguradora (referencia a Catálogos Base),
-  número de póliza, fecha de vencimiento de póliza, referencia a su archivo de póliza vigente,
-  referencia a su foto vigente (opcional, sin historial — a diferencia de la póliza), estado de
-  baja y motivo. Referenciado por Combustible, Mantenimiento, Checklist y Servicios Obligatorios
-  (features futuras).
+  VIN, kilometraje actual, combustible, transmisión (los últimos cuatro opcionales, Clarifications
+  sesión 2026-08-08), tipo de vehículo (referencia a Catálogos Base), aseguradora (referencia a
+  Catálogos Base), número de póliza, fecha de vencimiento de póliza, referencia a su archivo de
+  póliza vigente, referencia a su foto vigente (opcional, sin historial — a diferencia de la
+  póliza), estado de baja y motivo. Referenciado por Combustible, Mantenimiento, Checklist y
+  Servicios Obligatorios (features futuras).
 - **Archivo de póliza**: cada versión de póliza subida para un vehículo. Atributos: tipo de
   documento, ruta de almacenamiento, a qué vehículo pertenece, quién lo subió, cuándo. Un
   vehículo conserva todas sus versiones históricas; solo una a la vez es la vigente. Su ciclo de
@@ -439,6 +469,11 @@ usado por US-3.3.
 - **Ocultar vehículos dados de baja como opción en formularios de Combustible, Mantenimiento o
   Checklist**: esas features no existen todavía; la regla queda anotada para cuando se
   construyan, no se implementa aquí.
+- **"Conductor Asignado" y "Último Mantenimiento" del mockup de detalle** (Clarifications, sesión
+  2026-08-08): a diferencia de VIN/kilometraje/combustible/transmisión (datos intrínsecos del
+  vehículo, sí agregados — FR-001, FR-026), estos dos son relaciones hacia entidades de
+  Conductores y Mantenimiento que no existen todavía; se agregan a la vista de detalle cuando esas
+  features se construyan.
 
 ## Success Criteria *(mandatory)*
 

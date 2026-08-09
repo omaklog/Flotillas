@@ -24,6 +24,8 @@ aislamiento vía la ruta de sus objetos.
 | `capacidad_carga` | numeric, nullable | |
 | `anio` | int, nullable | |
 | `numero_ejes` | int, nullable | |
+| `vin`, `combustible`, `transmision` | text, nullable | **nuevas (segunda ronda de `/speckit-clarify`, migración `20260809024839_vehiculos_campos_adicionales.sql`)** — datos intrínsecos del vehículo del mockup de Stitch, sin catálogo formal (texto libre) |
+| `kilometraje_actual` | numeric, nullable | **nueva**, mismo origen que las 3 anteriores |
 | `tipo_vehiculo_id` | uuid, not null, FK → `tipos_vehiculo.id` | catálogo de Catálogos Base (002) |
 | `aseguradora_id` | uuid, nullable, FK → `aseguradoras.id` | catálogo de Catálogos Base (002) |
 | `numero_poliza` | text, nullable | |
@@ -36,8 +38,8 @@ aislamiento vía la ruta de sus objetos.
 
 **Extensión de esta feature**: se agrega el trigger de auditoría `private.audit_vehiculos()`
 (research.md R4), que interpreta cambios en `baja` como `'desactivar'`/`'reactivar'` en vez de
-`'editar'`; y, en una ronda posterior de `/speckit-clarify` (sesión 2026-08-08), la columna
-`foto_archivo_id` (arriba).
+`'editar'`; y, en rondas posteriores de `/speckit-clarify` (sesión 2026-08-08), las columnas
+`foto_archivo_id`, `vin`, `kilometraje_actual`, `combustible` y `transmision` (arriba).
 
 **Transiciones**: `baja: false ⇄ true` (US-3.4, vía `private.audit_vehiculos()` — mismo patrón que
 `activo` en empresas/usuarios pero invertido). Eliminación física (US-3.5) sujeta a que no existan

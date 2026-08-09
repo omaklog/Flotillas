@@ -51,6 +51,22 @@
             <v-text-field v-model="valores.numero_ejes" label="Número de ejes" type="number" />
           </v-col>
           <v-col cols="12" md="6">
+            <v-text-field v-model="valores.vin" label="VIN" />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field
+              v-model="valores.kilometraje_actual"
+              label="Kilometraje actual"
+              type="number"
+            />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field v-model="valores.combustible" label="Combustible" />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field v-model="valores.transmision" label="Transmisión" />
+          </v-col>
+          <v-col cols="12" md="6">
             <!-- v-autocomplete, no v-select: mismo criterio que PermisosVehiculo.vue — el
             catálogo de tipos de vehículo crece sin límite por empresa y Vuetify virtualiza los
             v-select largos (los ítems fuera del rango visible no existen en el DOM hasta hacer
@@ -220,6 +236,10 @@ const valores = reactive({
   capacidad_carga: (props.registro?.capacidad_carga ?? '') as number | string,
   anio: (props.registro?.anio ?? '') as number | string,
   numero_ejes: (props.registro?.numero_ejes ?? '') as number | string,
+  vin: props.registro?.vin ?? '',
+  kilometraje_actual: (props.registro?.kilometraje_actual ?? '') as number | string,
+  combustible: props.registro?.combustible ?? '',
+  transmision: props.registro?.transmision ?? '',
   tipo_vehiculo_id: props.registro?.tipo_vehiculo_id ?? '',
   aseguradora_id: props.registro?.aseguradora_id ?? '',
   numero_poliza: props.registro?.numero_poliza ?? '',
@@ -288,6 +308,10 @@ async function onSubmit() {
     capacidad_carga: numOrNull(valores.capacidad_carga),
     anio: numOrNull(valores.anio),
     numero_ejes: numOrNull(valores.numero_ejes),
+    vin: valores.vin || null,
+    kilometraje_actual: numOrNull(valores.kilometraje_actual),
+    combustible: valores.combustible || null,
+    transmision: valores.transmision || null,
     tipo_vehiculo_id: valores.tipo_vehiculo_id,
     aseguradora_id: valores.aseguradora_id || null,
     numero_poliza: valores.numero_poliza || null,

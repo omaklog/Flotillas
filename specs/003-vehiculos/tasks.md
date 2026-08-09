@@ -678,6 +678,91 @@ prueba limpiada manualmente después.
 
 ---
 
+## Fase agregada por segunda ronda de `/speckit-clarify` (sesión 2026-08-08)
+
+El usuario revisó la Fase 10 ya implementada contra el mockup (`detalle-vehiculo-datos-generales.png`)
+y señaló dos brechas: (1) el detalle de solo lectura usaba una sola tarjeta con todos los campos
+en cuadrícula, sin la agrupación en tarjetas del mockup; (2) VIN/Kilometraje/Combustible/
+Transmisión del mockup no existían en el modelo — se habían asumido fuera de alcance sin una
+decisión explícita. `/speckit-clarify` resolvió ambas: agrupar en 4 tarjetas (FR-026) y agregar
+los 4 campos como columnas opcionales de `vehiculos` (FR-001 ampliado) — "Conductor Asignado"/
+"Último Mantenimiento" del mockup siguen fuera de alcance (dependen de features que no existen).
+
+## Phase 12: Campos adicionales del vehículo y detalle agrupado en tarjetas (FR-001, FR-026 — cruza US1, US3, US7)
+
+**Goal**: Capturar VIN, kilometraje actual, combustible y transmisión (opcionales) en alta/edición,
+y reorganizar el detalle de solo lectura en 4 tarjetas siguiendo el mockup de Stitch en vez de una
+cuadrícula plana.
+
+**Independent Test**: Dar de alta un vehículo capturando los 4 campos nuevos y confirmar que
+aparecen en la tarjeta correcta de su detalle; confirmar que las 4 tarjetas ("Identificación del
+Vehículo", "Registro y Seguimiento", "Especificaciones Técnicas", "Seguro y Póliza") existen y
+agrupan los campos según FR-026.
+
+**Depende de US1** (formulario de alta), **US3** (formulario de edición) **y US7** (vista de
+detalle a reestructurar, Fase 10) — mismo criterio de dependencia que la Fase 11 (Foto).
+
+### Foundational para esta fase
+
+- [X] T065 Crear una migración nueva (`supabase migration new vehiculos_campos_adicionales`):
+      `alter table public.vehiculos add column vin text`, `add column kilometraje_actual
+      numeric`, `add column combustible text`, `add column transmision text` — las 4 nullable
+      (opcionales, Clarifications sesión 2026-08-08). Aplicar (`supabase migration up`),
+      regenerar `app/types/database.types.ts` (`supabase gen types typescript --local > archivo`
+      — **sin** `2>&1` antes del `>`, lección de la Fase 11), y actualizar `data-model.md`
+      (tabla `vehiculos`: 4 columnas nuevas) y `contracts/vehiculos.md` si el contrato de
+      alta/edición necesita mencionarlas explícitamente.
+
+      **Verificado**: migración `20260809024839_vehiculos_campos_adicionales.sql` aplicada sin
+      error; `database.types.ts` regenerado con las 4 columnas presentes en `Row`/`Insert`/
+      `Update` de `vehiculos`; `typecheck`/`lint` limpios. `data-model.md` actualizado.
+
+### Tests for Campos adicionales y detalle agrupado
+
+- [X] T066 [P] [US1] Playwright: alta capturando VIN, kilometraje actual, combustible y
+      transmisión deja esos datos visibles en el detalle del vehículo en
+      `tests/e2e/vehiculos.spec.ts`
+- [X] T067 [P] [US7] Playwright: el detalle de solo lectura agrupa los campos en las 4 tarjetas
+      de FR-026 — verificar que "Identificación del Vehículo" contiene la foto y
+      marca/modelo/año/color/tipo, "Registro y Seguimiento" contiene placa/VIN/número de
+      serie/número de motor/kilometraje, "Especificaciones Técnicas" contiene
+      combustible/transmisión/ejes/capacidad de carga, y "Seguro y Póliza" contiene
+      aseguradora/número de póliza/vencimiento, en `tests/e2e/vehiculos.spec.ts`
+- [X] T068 [P] [US3] Playwright: editar VIN, kilometraje actual, combustible y/o transmisión de
+      un vehículo existente guarda los cambios y se reflejan en el detalle en
+      `tests/e2e/vehiculos.spec.ts`
+
+      **Estado**: confirmado en rojo (3/3 fallan — campos VIN/Kilometraje/Combustible/
+      Transmisión no existen en el formulario todavía, y las tarjetas de FR-026 no existen en
+      `[id]/index.vue`).
+
+### Implementation for Campos adicionales y detalle agrupado
+
+- [X] T069 Extender `app/components/vehiculos/FormularioVehiculo.vue`: agregar campos VIN
+      (texto), Kilometraje actual (número), Combustible (texto), Transmisión (texto) — todos
+      opcionales — en la tarjeta "Datos del vehículo"; incluirlos en `payload` al emitir
+      `enviar` (los 4 ya llegan tipados en `VehiculoValores` una vez regenerado
+      `database.types.ts` en T065, sin cambios de composable necesarios en `useVehiculos.ts`).
+- [X] T070 Reestructurar `app/pages/admin/vehiculos/[id]/index.vue`: reemplazar la tarjeta única
+      `datos-vehiculo` (cuadrícula plana) por 4 `v-card` agrupadas según FR-026, cada una con su
+      propio `data-testid` (p. ej. `tarjeta-identificacion`, `tarjeta-registro`,
+      `tarjeta-especificaciones`, `tarjeta-seguro-poliza`); la foto (T064, Fase 11) se integra
+      dentro de "Identificación del Vehículo" en vez de flotar sola arriba de la cuadrícula.
+
+      **Estado de la fase**: 3/3 tests de Fase 12 en verde a la primera corrida (T066-T068).
+      Suite completa (`vehiculos.spec.ts` + `rls.spec.ts`, 42 pruebas): 41/42 en verde en la
+      primera pasada; el único fallo (T011, ajena a esta fase) es la misma flake de contención
+      bajo carga ya documentada — confirmada no reproducible en aislamiento (pasa consistente al
+      correrla sola). `datos-vehiculo` se movió del `v-card` original al `v-window-item`
+      contenedor (ahora envuelve las 4 tarjetas nuevas), preservando los `getByTestId
+      ('datos-vehiculo')` de T050/T052 sin cambios. `typecheck`/`lint` limpios.
+
+**Checkpoint**: Campos adicionales y detalle agrupado en tarjetas funcionando, probados de forma
+independiente sobre US1/US3/US7 ya construidas. No afecta Foto (Fase 11) ni ninguna historia
+anterior — solo agrega campos y reorganiza el layout de una tarjeta ya existente.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -689,6 +774,9 @@ prueba limpiada manualmente después.
 - **Polish (Phase 9)**: depende de que las historias que se vayan a entregar estén completas.
 - **Foto del vehículo (Phase 11)**: agregada en una ronda posterior de `/speckit-clarify`; depende
   de US1, US3 y US7 (Phase 10), no de Polish (Phase 9, ya cerrada para el alcance original).
+- **Campos adicionales y detalle agrupado (Phase 12)**: agregada en una tercera ronda de
+  `/speckit-clarify`; depende de US1, US3 y US7 igual que Foto (Phase 11), pero es independiente
+  de Foto — ambas fases pueden avanzar en cualquier orden entre sí.
 
 ### User Story Dependencies
 
@@ -709,9 +797,13 @@ prueba limpiada manualmente después.
   seguir pasando después de este cambio de estructura.
 - **Foto del vehículo (agregada post-`/speckit-clarify`, sin número de historia — cruza US1, US3,
   US7)**: depende de que las tres ya estén completas; no depende de US4/US5/US6.
+- **Campos adicionales y detalle agrupado (agregada en tercera ronda de `/speckit-clarify`, sin
+  número de historia — cruza US1, US3, US7)**: misma dependencia que Foto; independiente de Foto
+  entre sí (pueden ir en cualquier orden relativo, o en paralelo si hay más de un desarrollador).
 
 Orden de implementación sugerido que respeta esta cadena: **US1 → US2 → US3 → (US4 y US5 en
-paralelo) → US6 → US7 → Foto del vehículo**.
+paralelo) → US6 → US7 → (Foto del vehículo y Campos adicionales, en cualquier orden o en
+paralelo)**.
 
 ### Within Each User Story
 
@@ -771,6 +863,8 @@ Task: "Playwright: fallo de subida no revierte el alta en tests/e2e/vehiculos.sp
 7. Polish: RLS negativo, aislamiento de Storage, accesibilidad, auditoría de punta a punta
 8. **(agregado post-`/speckit-clarify`)** US7 (vista de detalle de solo lectura) → probar → demo
 9. **(agregado post-`/speckit-clarify`)** Foto del vehículo → probar → demo
+10. **(agregado en tercera ronda de `/speckit-clarify`)** Campos adicionales (VIN, kilometraje,
+    combustible, transmisión) y detalle agrupado en tarjetas → probar → demo
 
 ### Parallel Team Strategy
 
@@ -798,3 +892,6 @@ persona en US1, otra en US2 en paralelo; luego una persona en US3 mientras otra 
   el usuario señaló brechas contra el mockup de Stitch vía `/speckit-clarify`. `checklists/
   requirements.md` no se re-validó como parte de este comando (esa validación vive en
   `/speckit-clarify`, ya corrida) — sigue en 16/16 sin cambios de estado.
+- T065-T070 (Fase 12) se agregaron en una tercera ronda, tras una segunda pasada de
+  `/speckit-clarify` sobre la Fase 10 ya implementada (el detalle de solo lectura no reflejaba el
+  mockup de referencia). Mismo criterio que T050-T064: no se regeneró `tasks.md`, se anexó.

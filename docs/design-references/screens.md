@@ -44,12 +44,24 @@ Las 3 últimas (`listado-flotilla-vehiculos-v2.png`, `gestion-vehiculo-alta-edic
 (Vehículos), directo en la UI de Stitch por el usuario. **Adaptaciones deliberadas respecto al
 mockup, no discrepancias por descuido**: (1) el mockup separa "Datos Generales" y "Seguro y
 Póliza" en 2 pestañas distintas dentro del formulario de alta/edición — se combinan en una sola
-pestaña "Datos" en la implementación real, porque nuestro formulario es más chico (sin VIN, sin
-specs de transmisión/combustible que no existen en el schema de esta feature) y no justifica el
-paso adicional; (2) el listado del mockup muestra filtros por categoría (Camiones/Vans/Ligeros) y
-una columna "Próx. Mantenimiento" — fuera de alcance (Mantenimiento 004 no existe todavía); se
-usa en cambio el badge de vigencia de póliza ya visto en `listado-flotilla.png`; (3) el detalle
-del mockup incluye pestañas/tarjetas de "Conductor Asignado" y "Mantenimiento" — tampoco existen
-todavía (Conductores, Mantenimiento); se omiten hasta que esas features se construyan.
+pestaña "Datos" en la implementación real; el formulario sigue siendo más chico que el del
+mockup (sin "Estado Operativo": conductor asignado, ubicación, último mantenimiento — ver (3)) y
+no justifica el paso adicional; (2) el listado del mockup muestra filtros por categoría
+(Camiones/Vans/Ligeros) y una columna "Próx. Mantenimiento" — fuera de alcance (Mantenimiento 004
+no existe todavía); se usa en cambio el badge de vigencia de póliza ya visto en
+`listado-flotilla.png`; (3) el detalle del mockup incluye pestañas/tarjetas de "Conductor
+Asignado" y "Mantenimiento" — tampoco existen todavía (Conductores, Mantenimiento); se omiten
+hasta que esas features se construyan.
+
+**Segunda ronda de `/speckit-clarify` (2026-08-08)**, tras revisar la vista de detalle ya
+implementada contra `detalle-vehiculo-datos-generales.png`: la primera versión del detalle de
+solo lectura (US-3.7) usaba una sola tarjeta con todos los campos en una cuadrícula uniforme, sin
+la agrupación en tarjetas del mockup ("Identificación del Vehículo", "Registro y Seguimiento"), y
+omitía VIN/Kilometraje/Combustible/Transmisión asumiéndolos fuera de alcance por descuido, no por
+decisión explícita. Corregido: (a) el detalle ahora agrupa en tarjetas siguiendo el mockup
+(spec.md FR-026); (b) VIN, kilometraje actual, combustible y transmisión se agregaron como
+columnas opcionales de `vehiculos` — son datos intrínsecos del vehículo, a diferencia de
+"Conductor Asignado"/"Mantenimiento" (relaciones a entidades que no existen, siguen fuera de
+alcance vía (3) arriba).
 
 Proyecto de origen en Stitch: `projects/4499192746969655413` ("FleetControl Enterprise").

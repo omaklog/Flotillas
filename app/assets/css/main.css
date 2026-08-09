@@ -8,6 +8,14 @@
   --ff-body-main: 400 16px/24px 'Inter Variable', sans-serif;
   --ff-metadata: 400 14px/20px 'Inter Variable', sans-serif;
   --ff-label-caps: 600 12px/16px 'Inter Variable', sans-serif;
+
+  /* Fuente base de Vuetify (custom properties nativas de su CSS compilado, `html { font-family:
+  var(--v-font-body, "Roboto", sans-serif) }`) — sin esto, Inter solo aplicaba a las 5 clases
+  `.text-*` de arriba y el resto de los componentes de Vuetify (botones, labels de campos,
+  celdas de tabla, tabs, chips) caían al Roboto por defecto, contradiciendo design-system.md
+  (Inter en toda la escala tipográfica, no solo en títulos/metadata). */
+  --v-font-body: 'Inter Variable', sans-serif;
+  --v-font-heading: 'Inter Variable', sans-serif;
 }
 
 .text-page-title {

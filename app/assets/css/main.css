@@ -41,6 +41,7 @@
 .text-section-title {
   font: var(--ff-section-title);
   letter-spacing: -0.01em;
+  margin-bottom: 8px;
 }
 
 .text-body-main {
@@ -107,6 +108,12 @@ button:focus-visible,
 .app-drawer-shadow {
   border-inline-end: none !important;
   box-shadow: 2px 0 8px rgba(16, 24, 40, 0.06) !important;
+}
+
+/* Vuetify no deja separación entre el ícono/avatar previo y el título del app-bar
+   (`.v-toolbar-title__placeholder` no trae `margin` propio en su CSS compilado). */
+.v-toolbar-title__placeholder {
+  margin-left: 16px;
 }
 
 /* App-bar translúcida con blur, en vez de fondo sólido opaco. */

@@ -26,6 +26,7 @@ Sigue el mismo lenguaje visual descrito en `../design-system.md`.
 | Listado de Flotilla de Vehículos | Vehículos (003, `admin/vehiculos/index.vue`) | `screens/listado-flotilla-vehiculos-v2.png` | `c3baa74b234d4bec8de37408d9cc1a33` |
 | Gestión de Vehículo: Alta y Edición | Vehículos (003, `admin/vehiculos/nuevo.vue` y `[id].vue`, pestaña de datos — referencia de patrón, no literal) | `screens/gestion-vehiculo-alta-edicion.png` | `fd9fb918cd9e4c8094c7153c47d8d4f5` |
 | Detalle de Vehículo: Datos Generales | Vehículos (003, `admin/vehiculos/[id].vue`) | `screens/detalle-vehiculo-datos-generales.png` | `94fd194837ed400598c50cbed163aab0` |
+| Detalle de Vehículo: Historial de Pólizas | Vehículos (003, `admin/vehiculos/[id]/index.vue`, pestaña "Historial de Póliza", `components/vehiculos/HistorialPoliza.vue`) | `screens/detalle-vehiculo-historial-polizas.png` | `70e72834d4ee4bd08560b2617249ff35` |
 
 Las 3 anteriores a estas 2 últimas se descargaron el 2026-08-07, vía el workaround de `curl`
 directo documentado en `../../CLAUDE.md` § "Design system compliance" (el MCP de Stitch tenía
@@ -63,5 +64,17 @@ decisión explícita. Corregido: (a) el detalle ahora agrupa en tarjetas siguien
 columnas opcionales de `vehiculos` — son datos intrínsecos del vehículo, a diferencia de
 "Conductor Asignado"/"Mantenimiento" (relaciones a entidades que no existen, siguen fuera de
 alcance vía (3) arriba).
+
+**`detalle-vehiculo-historial-polizas.png`** se generó y descargó el 2026-08-09, directo en la UI
+de Stitch por el usuario, para reemplazar la vista en lista simple (`v-list`) de la pestaña
+"Historial de Póliza" por el formato de tabla del mockup. Adaptación deliberada: el mockup
+etiqueta las versiones no vigentes como "Vencida" (implica que Stitch conoce la fecha de
+vencimiento de cada versión histórica); el modelo de datos real solo guarda
+`numero_poliza`/`fecha_vencimiento_poliza` para la póliza vigente del vehículo, no por versión —
+las versiones anteriores se etiquetan como "Anterior" en vez de "Vencida" para no afirmar algo que
+no se puede verificar. Tampoco se replica la subetiqueta "Póliza Anual 2026-2027" bajo la fecha
+(no existe un campo de período por versión). El botón "Subir Nueva Póliza" del mockup sí se
+implementó igual: permite reemplazar la póliza directamente desde esta pestaña además de desde
+Editar (spec.md FR-011a).
 
 Proyecto de origen en Stitch: `projects/4499192746969655413` ("FleetControl Enterprise").

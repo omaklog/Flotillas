@@ -777,6 +777,50 @@ este cambio — confirmada no reproducible en aislamiento). `typecheck`/`lint` l
 
 ---
 
+## Fase agregada — Historial de Pólizas rediseñado (feedback directo, sesión 2026-08-09)
+
+Tras revisar el nuevo mockup de Stitch `detalle-vehiculo-historial-polizas.png`
+(`docs/design-references/screens.md`), se rediseñó la pestaña "Historial de Póliza" del detalle
+de vehículo: de una `v-list` simple a una tabla (`v-table`) con columnas Versión/Fecha, Estado,
+Subido por y Acciones, más la capacidad de subir una nueva versión directo desde esa pestaña
+(spec.md FR-011, FR-011a, User Story 3 escenario 4). No requirió una ronda formal de
+`/speckit-clarify` — se resolvió con `AskUserQuestion` si el botón "Subir Nueva Póliza" del
+mockup debía implementarse también (sí) antes de tocar código, dado que es una capacidad nueva y
+no solo un cambio visual.
+
+### Implementation
+
+- [X] T071 Agregar `verArchivo(storagePath)` a `app/composables/useVehiculos.ts`: igual que
+      `descargarArchivo` pero sin la opción `download`, para que el botón "Ver" abra la versión en
+      una pestaña nueva (`window.open`) sin forzar `Content-Disposition: attachment`.
+- [X] T072 Reescribir `app/components/vehiculos/HistorialPoliza.vue`: `v-table` en vez de
+      `v-list`, título "Historial de Pólizas de Seguro", chip de estado por fila ("Vigente" /
+      "Anterior" — no "Vencida", porque el modelo de datos no guarda vencimiento por versión, solo
+      para la póliza vigente del vehículo), acciones "Ver" y "Descargar", y un diálogo "Subir
+      Nueva Póliza" (mismo dropzone y `validarArchivo` que `FormularioVehiculo.vue`, reutiliza
+      `adjuntarPoliza` del composable); emite `subida` para que la página padre refresque
+      `vehiculo.poliza_archivo_id`.
+- [X] T073 Conectar el evento en `app/pages/admin/vehiculos/[id]/index.vue`
+      (`@subida="cargar"`) y actualizar `docs/design-references/screens.md` con la nueva
+      referencia descargada de Stitch.
+
+### Tests
+
+- [X] T025/T026 actualizados: contenedor renombrado de `historial-poliza-lista` a
+      `historial-poliza-tabla`; `vigente-badge-${id}` reemplazado por `estado-${id}` (ahora
+      presente en todas las filas, no solo en la vigente).
+- [X] T074 [P] "Ver" dispara la request de la URL firmada sin el parámetro `download=` (a
+      diferencia de "Descargar") — verificado interceptando la request en vez de inspeccionar la
+      pestaña nueva: Chromium headless descarga la respuesta `application/pdf` en vez de
+      navegarla, dejando la `page` del popup sin URL utilizable para el assert.
+- [X] T075 [P] "Subir Nueva Póliza" desde el historial agrega una fila nueva marcada "Vigente" y
+      degrada la anterior a "Anterior".
+
+**Estado de la fase**: 35/35 en `vehiculos.spec.ts --project=admin` (incluye T037, sin flake esta
+corrida). `typecheck`/`lint` limpios.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies

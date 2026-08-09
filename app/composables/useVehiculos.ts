@@ -273,6 +273,15 @@ export function useVehiculos() {
     return data.signedUrl
   }
 
+  /** A diferencia de `descargarArchivo`, sin `download` — el navegador respeta el
+   * `Content-Disposition` inline que Storage sirve por defecto y previsualiza el PDF/imagen en
+   * una pestaña nueva en vez de forzar la descarga (botón "Ver" del historial de póliza). */
+  async function verArchivo(storagePath: string) {
+    const { data, error: err } = await client.storage.from(BUCKET).createSignedUrl(storagePath, 60)
+    if (err) throw err
+    return data.signedUrl
+  }
+
   async function listarPermisos(vehiculoId: string) {
     const { data, error: err } = await client
       .from('vehiculo_permisos')
@@ -323,6 +332,7 @@ export function useVehiculos() {
     eliminar,
     listarHistorialPoliza,
     descargarArchivo,
+    verArchivo,
     listarPermisos,
     asignarPermiso,
     editarVencimientoPermiso,

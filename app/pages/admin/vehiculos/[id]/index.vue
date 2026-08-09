@@ -169,6 +169,7 @@
             :key="vehiculo.poliza_archivo_id ?? 'sin-poliza'"
             :vehiculo-id="vehiculo.id"
             :poliza-vigente-id="vehiculo.poliza_archivo_id"
+            @subida="cargar"
           />
         </v-window-item>
 

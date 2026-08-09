@@ -206,8 +206,16 @@ historial de versiones, marcado como no vigente.
    archivo de póliza, **Then** el nuevo archivo queda como la póliza vigente y el anterior sigue
    existiendo, visible en el historial de versiones del vehículo.
 3. **Given** un vehículo con más de una versión de póliza en su historial, **When** el
-   administrador abre esa sección del detalle, **Then** ve cada versión con su fecha de subida,
-   quién la subió, un enlace de descarga, y cuál de ellas es la vigente.
+   administrador abre esa sección del detalle, **Then** ve cada versión en una tabla con su fecha
+   de subida, quién la subió, una acción para previsualizarla ("Ver") y otra para descargarla, y
+   una etiqueta de estado que indica si es la vigente o una versión anterior.
+4. **Given** el detalle de un vehículo, **When** el administrador usa la acción "Subir Nueva
+   Póliza" directamente desde esa sección (sin pasar por Editar) y adjunta un archivo válido,
+   **Then** el nuevo archivo queda como la póliza vigente, la versión anterior pasa a marcarse
+   como anterior, y ambas quedan visibles en el historial (feedback directo tras revisar
+   `docs/design-references/screens/detalle-vehiculo-historial-polizas.png`, sesión 2026-08-09; no
+   requirió una ronda formal de `/speckit-clarify` por ser una extensión aditiva y de bajo riesgo
+   sobre US-3.3, ya cubierta por el mismo flujo de subida de FR-010).
 
 ---
 
@@ -385,7 +393,12 @@ usado por US-3.3.
   archivo anterior NO MUST eliminarse — MUST permanecer disponible en el historial de versiones,
   y el vehículo MUST quedar apuntando al nuevo archivo como su póliza vigente.
 - **FR-011**: El detalle de un vehículo MUST mostrar el historial completo de versiones de su
-  póliza (fecha de subida, quién la subió, enlace de descarga), indicando cuál es la vigente.
+  póliza en una tabla (fecha de subida, quién la subió, acción "Ver" para previsualizar y acción
+  "Descargar"), etiquetando cada fila como "Vigente" o "Anterior" según corresponda.
+- **FR-011a**: El administrador MUST poder subir una nueva versión de la póliza directamente desde
+  esa sección del historial (además de poder hacerlo vía Editar, FR-010) — misma validación de
+  tipo/tamaño de archivo (FR-004) y mismo efecto: el nuevo archivo queda como vigente sin eliminar
+  el anterior.
 - **FR-012**: El administrador MUST poder dar de baja un vehículo mediante una acción dedicada que
   exige capturar un motivo de hasta 150 caracteres antes de confirmar; el sistema MUST impedir
   confirmar la baja sin ese motivo.

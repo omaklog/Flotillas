@@ -508,17 +508,17 @@ test.describe('US3 — Administrador edita un vehículo y gestiona el historial 
     await esperarHidratacion(page)
     await page.getByRole('tab', { name: 'Historial de Póliza' }).click()
 
-    const lista = page.getByTestId('historial-poliza-lista')
-    await expect(lista).toBeVisible()
-    const items = lista.locator('[data-testid^="historial-poliza-item-"]')
+    const tabla = page.getByTestId('historial-poliza-tabla')
+    await expect(tabla).toBeVisible()
+    const items = tabla.locator('[data-testid^="historial-poliza-item-"]')
     await expect(items).toHaveCount(2)
 
     // v2 (la más reciente) debe aparecer primero (orden descendente).
     await expect(items.nth(0)).toHaveAttribute('data-testid', `historial-poliza-item-${v2.id}`)
     await expect(items.nth(1)).toHaveAttribute('data-testid', `historial-poliza-item-${v1.id}`)
 
-    await expect(page.getByTestId(`vigente-badge-${v2.id}`)).toBeVisible()
-    await expect(page.getByTestId(`vigente-badge-${v1.id}`)).toHaveCount(0)
+    await expect(page.getByTestId(`estado-${v2.id}`)).toHaveText('Vigente')
+    await expect(page.getByTestId(`estado-${v1.id}`)).toHaveText('Anterior')
 
     await expect(items.nth(0)).toContainText(adminNombre)
   })
@@ -557,7 +557,7 @@ test.describe('US3 — Administrador edita un vehículo y gestiona el historial 
     await page.goto(`/admin/vehiculos/${vehiculo!.id}`)
     await esperarHidratacion(page)
     await page.getByRole('tab', { name: 'Historial de Póliza' }).click()
-    await expect(page.getByTestId('historial-poliza-lista')).toBeVisible()
+    await expect(page.getByTestId('historial-poliza-tabla')).toBeVisible()
 
     const [descarga] = await Promise.all([
       page.waitForEvent('download'),
@@ -568,6 +568,89 @@ test.describe('US3 — Administrador edita un vehículo y gestiona el historial 
     expect(ruta).not.toBeNull()
     const contenido = await readFile(ruta!, 'utf-8')
     expect(contenido).toBe('%PDF-1.4 versión seed-no-vigente.pdf')
+  })
+
+  test('T074: "Ver" abre la versión en una pestaña nueva sin forzar su descarga', async ({
+    page
+  }) => {
+    const { admin, empresaId, tipoVehiculoId, adminId } = await empresaYTipoAdmin()
+    const sufijo = Date.now()
+    const { data: vehiculo } = await admin
+      .from('vehiculos')
+      .insert({
+        empresa_id: empresaId,
+        marca: `Scania T074 ${sufijo}`,
+        modelo: 'R450',
+        placa: `T074-${sufijo}`,
+        tipo_vehiculo_id: tipoVehiculoId
+      })
+      .select('id')
+      .single()
+    const v1 = await sembrarVersionPoliza(admin, {
+      empresaId,
+      vehiculoId: vehiculo!.id,
+      subidoPor: adminId,
+      nombreArchivo: 'seed-ver.pdf'
+    })
+    await admin.from('vehiculos').update({ poliza_archivo_id: v1.id }).eq('id', vehiculo!.id)
+
+    await page.goto(`/admin/vehiculos/${vehiculo!.id}`)
+    await esperarHidratacion(page)
+    await page.getByRole('tab', { name: 'Historial de Póliza' }).click()
+    await expect(page.getByTestId('historial-poliza-tabla')).toBeVisible()
+
+    // No se valida vía la pestaña nueva que abre `window.open`: Chromium headless no trae un
+    // visor de PDF y descarga la respuesta `application/pdf` en vez de navegar a ella, dejando
+    // la "page" del popup sin URL y sin disparar `load` (comprobado directamente — el test
+    // colgaba/quedaba con `popup.url() === ''` con ese enfoque). En su lugar se intercepta la
+    // request real: sin el parámetro `download=` en la URL firmada es la señal correcta de que
+    // `verArchivo` (a diferencia de `descargarArchivo`) no fuerza `Content-Disposition:
+    // attachment`.
+    const [request] = await Promise.all([
+      page.waitForRequest((req) => req.url().includes(v1.storagePath)),
+      page.getByTestId(`ver-btn-${v1.id}`).click()
+    ])
+    expect(request.url()).not.toContain('download=')
+  })
+
+  test('T075: "Subir Nueva Póliza" desde el historial agrega una versión y la marca como Vigente', async ({
+    page
+  }) => {
+    const { admin, empresaId, tipoVehiculoId, adminId } = await empresaYTipoAdmin()
+    const sufijo = Date.now()
+    const { data: vehiculo } = await admin
+      .from('vehiculos')
+      .insert({
+        empresa_id: empresaId,
+        marca: `Iveco T075 ${sufijo}`,
+        modelo: 'S-Way',
+        placa: `T075-${sufijo}`,
+        tipo_vehiculo_id: tipoVehiculoId
+      })
+      .select('id')
+      .single()
+    const v1 = await sembrarVersionPoliza(admin, {
+      empresaId,
+      vehiculoId: vehiculo!.id,
+      subidoPor: adminId,
+      nombreArchivo: 'seed-t072.pdf'
+    })
+    await admin.from('vehiculos').update({ poliza_archivo_id: v1.id }).eq('id', vehiculo!.id)
+
+    await page.goto(`/admin/vehiculos/${vehiculo!.id}`)
+    await esperarHidratacion(page)
+    await page.getByRole('tab', { name: 'Historial de Póliza' }).click()
+    await expect(page.getByTestId('historial-poliza-tabla')).toBeVisible()
+
+    await page.getByTestId('subir-poliza-btn').click()
+    await page.getByTestId('subir-poliza-input').setInputFiles(pdfDePrueba('nueva-version.pdf'))
+    await page.getByTestId('confirmar-subida-btn').click()
+
+    const tabla = page.getByTestId('historial-poliza-tabla')
+    const items = tabla.locator('[data-testid^="historial-poliza-item-"]')
+    await expect(items).toHaveCount(2)
+    await expect(items.nth(0)).toContainText('Vigente')
+    await expect(page.getByTestId(`estado-${v1.id}`)).toHaveText('Anterior')
   })
 })
 

@@ -761,6 +761,20 @@ detalle a reestructurar, Fase 10) — mismo criterio de dependencia que la Fase 
 independiente sobre US1/US3/US7 ya construidas. No afecta Foto (Fase 11) ni ninguna historia
 anterior — solo agrega campos y reorganiza el layout de una tarjeta ya existente.
 
+**Ajuste post-implementación (feedback directo, sin nueva ronda de `/speckit-clarify`)**: tras ver
+T070 en pantalla, se fusionó "Registro y Seguimiento" dentro de "Identificación del Vehículo" (ya
+no es su propia tarjeta) y "Seguro y Póliza" tomó su lugar en la columna derecha — 3 tarjetas en
+vez de 4, menos scroll. `tarjeta-registro` ya no existe; sus campos (placa, VIN, número de serie,
+número de motor, kilometraje) ahora viven dentro de `tarjeta-identificacion`. T067/T066/T068
+actualizados para reflejarlo. De paso se corrigió un bug real de espaciado encontrado en el mismo
+repaso: `.text-body-main`/`.text-label-caps` (y las otras 3 clases de tipografía de
+`main.css`) heredaban el margen por defecto del navegador en `<p>` (`1em`, ~16px) al no tener
+`margin` propio — corregido con un reset a `margin: 0` en las 5 clases (son tokens de
+tipografía, no de layout) más un `mt-2` (8px) explícito entre cada par etiqueta/valor en el
+detalle. `spec.md` (FR-026, User Story 7) actualizado. Verificado: 32/33 en
+`vehiculos.spec.ts --project=admin` (el único fallo, T037, es una flake ya conocida y ajena a
+este cambio — confirmada no reproducible en aislamiento). `typecheck`/`lint` limpios.
+
 ---
 
 ## Dependencies & Execution Order

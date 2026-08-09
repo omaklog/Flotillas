@@ -18,6 +18,21 @@
   --v-font-heading: 'Inter Variable', sans-serif;
 }
 
+/* `margin: 0` en las 5: son tokens de tipografía puros (design-system.md), no de layout — el
+   espaciado entre elementos lo dan las utilidades de Vuetify (`mb-4`, `ga-2`, el gutter de
+   `v-row`, etc.), nunca el margen por defecto del user-agent en `<p>`/`<h*>` (`1em`, 16px a
+   16px de tamaño de fuente). Sin este reset, dos `<p>` consecutivos sin una clase `mb-*`/`mt-*`
+   explícita quedaban separados por ese margen de navegador no controlado — encontrado en el
+   detalle de vehículo (`[id]/index.vue`), donde el margen colapsado entre `text-label-caps` y
+   `text-body-main` daba ~16px en vez de los 8px que pide el diseño. */
+.text-page-title,
+.text-section-title,
+.text-body-main,
+.text-metadata,
+.text-label-caps {
+  margin: 0;
+}
+
 .text-page-title {
   font: var(--ff-page-title);
   letter-spacing: -0.02em;

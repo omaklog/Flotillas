@@ -309,11 +309,11 @@ usado por US-3.3.
 
 1. **Given** el administrador está en el listado de vehículos, **When** hace clic en un vehículo,
    **Then** se abre su detalle en modo solo lectura, con sus datos agrupados en tarjetas
-   siguiendo la referencia de Stitch (FR-026): "Identificación del Vehículo" (foto, marca,
-   modelo, año, color, tipo), "Registro y Seguimiento" (placa, VIN, número de serie, número de
-   motor, kilometraje actual), "Especificaciones Técnicas" (combustible, transmisión, número de
-   ejes, capacidad de carga) y "Seguro y Póliza" (aseguradora, número de póliza, vencimiento,
-   estado de vigencia) — y ningún campo editable.
+   siguiendo la referencia de Stitch, con un ajuste sobre esa referencia (FR-026): "Identificación
+   del Vehículo" (foto, marca, modelo, año, color, tipo, placa, VIN, número de serie, número de
+   motor, kilometraje actual), "Seguro y Póliza" (aseguradora, número de póliza, vencimiento,
+   estado de vigencia) y "Especificaciones Técnicas" (combustible, transmisión, número de ejes,
+   capacidad de carga) — y ningún campo editable.
 2. **Given** el administrador está viendo el detalle de un vehículo, **When** usa la acción
    "Editar", **Then** accede al formulario editable con los datos del vehículo precargados (mismo
    formulario de US-3.3).
@@ -429,12 +429,15 @@ usado por US-3.3.
   MB, antes de intentar subirlos (mismo criterio que FR-004 para la póliza).
 - **FR-026**: El detalle de solo lectura de un vehículo (US-3.7) MUST agrupar sus datos en
   tarjetas siguiendo la referencia de Stitch (`detalle-vehiculo-datos-generales.png`), no una
-  sola tarjeta con todos los campos en una cuadrícula uniforme: "Identificación del Vehículo"
-  (foto, marca, modelo, año, color, tipo de vehículo), "Registro y Seguimiento" (placa, VIN,
-  número de serie, número de motor, kilometraje actual), "Especificaciones Técnicas"
-  (combustible, transmisión, número de ejes, capacidad de carga), y "Seguro y Póliza"
-  (aseguradora, número de póliza, fecha de vencimiento, estado de vigencia) — esta última en vez
-  de "Estado Operativo" del mockup, que no aplica (Clarifications, sesión 2026-08-08).
+  sola tarjeta con todos los campos en una cuadrícula uniforme. Con un ajuste sobre esa
+  referencia, hecho tras revisar el resultado en pantalla (feedback directo, no otra ronda de
+  `/speckit-clarify`): "Registro y Seguimiento" MUST fusionarse dentro de "Identificación del
+  Vehículo" en vez de ser su propia tarjeta (menos separación entre datos del mismo vehículo, 3
+  tarjetas en vez de 4) — "Identificación del Vehículo" (foto, marca, modelo, año, color, tipo de
+  vehículo, placa, VIN, número de serie, número de motor, kilometraje actual), "Seguro y Póliza"
+  (aseguradora, número de póliza, fecha de vencimiento, estado de vigencia — en vez de "Estado
+  Operativo" del mockup, que no aplica) y "Especificaciones Técnicas" (combustible, transmisión,
+  número de ejes, capacidad de carga).
 
 ### Key Entities
 

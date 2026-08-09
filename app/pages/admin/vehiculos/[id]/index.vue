@@ -64,9 +64,11 @@
       <v-window v-model="tabActiva">
         <v-window-item value="datos" data-testid="datos-vehiculo">
           <!-- Agrupado en tarjetas siguiendo detalle-vehiculo-datos-generales.png (FR-026,
-          Clarifications sesión 2026-08-08) — no una sola tarjeta con todos los campos en
-          cuadrícula plana. "Seguro y Póliza" reemplaza al "Estado Operativo" del mockup
-          (conductor/mantenimiento, fuera de alcance — ver spec.md). -->
+          Clarifications sesión 2026-08-08), con un ajuste sobre esa referencia (feedback
+          directo tras revisar el resultado en pantalla): "Registro y Seguimiento" se fusiona
+          dentro de "Identificación del Vehículo" en vez de ser su propia tarjeta, y "Seguro y
+          Póliza" toma su lugar en la columna derecha — 3 tarjetas en vez de 4, menos scroll y
+          menos separación entre bloques relacionados del mismo vehículo. -->
           <v-row>
             <v-col cols="12" md="6">
               <v-card class="app-card-shadow" variant="flat" data-testid="tarjeta-identificacion">
@@ -98,9 +100,13 @@
                   </div>
 
                   <v-row>
-                    <v-col v-for="campo in camposIdentificacion" :key="campo.label" cols="6">
+                    <v-col
+                      v-for="campo in [...camposIdentificacion, ...camposRegistro]"
+                      :key="campo.label"
+                      cols="6"
+                    >
                       <p class="text-label-caps text-medium-emphasis">{{ campo.label }}</p>
-                      <p class="text-body-main">{{ campo.valor ?? '—' }}</p>
+                      <p class="text-body-main mt-2">{{ campo.valor ?? '—' }}</p>
                     </v-col>
                   </v-row>
                 </v-card-text>
@@ -108,16 +114,33 @@
             </v-col>
 
             <v-col cols="12" md="6">
-              <v-card class="app-card-shadow mb-4" variant="flat" data-testid="tarjeta-registro">
+              <v-card class="app-card-shadow mb-4" variant="flat" data-testid="tarjeta-seguro-poliza">
                 <v-card-text>
                   <h2 class="text-section-title d-flex align-center pb-3 mb-4 border-b">
-                    <v-icon icon="mdi-clipboard-text-outline" color="primary" class="mr-2" />
-                    Registro y Seguimiento
+                    <v-icon icon="mdi-shield-car" color="primary" class="mr-2" />
+                    Seguro y Póliza
                   </h2>
                   <v-row>
-                    <v-col v-for="campo in camposRegistro" :key="campo.label" cols="12" sm="6">
-                      <p class="text-label-caps text-medium-emphasis">{{ campo.label }}</p>
-                      <p class="text-body-main">{{ campo.valor ?? '—' }}</p>
+                    <v-col cols="12" sm="6">
+                      <p class="text-label-caps text-medium-emphasis">Aseguradora</p>
+                      <p class="text-body-main mt-2">{{ vehiculo.aseguradoras?.razon_social ?? '—' }}</p>
+                    </v-col>
+                    <v-col cols="12" sm="6">
+                      <p class="text-label-caps text-medium-emphasis">Número de póliza</p>
+                      <p class="text-body-main mt-2">{{ vehiculo.numero_poliza ?? '—' }}</p>
+                    </v-col>
+                    <v-col cols="12">
+                      <p class="text-label-caps text-medium-emphasis">Vencimiento</p>
+                      <div class="d-flex align-center ga-2 mt-2">
+                        <p class="text-body-main">{{ vehiculo.fecha_vencimiento_poliza ?? '—' }}</p>
+                        <v-chip
+                          v-if="vehiculo.fecha_vencimiento_poliza"
+                          :color="estadoPoliza.color"
+                          size="small"
+                        >
+                          {{ estadoPoliza.texto }}
+                        </v-chip>
+                      </div>
                     </v-col>
                   </v-row>
                 </v-card-text>
@@ -132,41 +155,7 @@
                   <v-row>
                     <v-col v-for="campo in camposEspecificaciones" :key="campo.label" cols="12" sm="6">
                       <p class="text-label-caps text-medium-emphasis">{{ campo.label }}</p>
-                      <p class="text-body-main">{{ campo.valor ?? '—' }}</p>
-                    </v-col>
-                  </v-row>
-                </v-card-text>
-              </v-card>
-            </v-col>
-
-            <v-col cols="12">
-              <v-card class="app-card-shadow" variant="flat" data-testid="tarjeta-seguro-poliza">
-                <v-card-text>
-                  <h2 class="text-section-title d-flex align-center pb-3 mb-4 border-b">
-                    <v-icon icon="mdi-shield-car" color="primary" class="mr-2" />
-                    Seguro y Póliza
-                  </h2>
-                  <v-row>
-                    <v-col cols="12" sm="4">
-                      <p class="text-label-caps text-medium-emphasis">Aseguradora</p>
-                      <p class="text-body-main">{{ vehiculo.aseguradoras?.razon_social ?? '—' }}</p>
-                    </v-col>
-                    <v-col cols="12" sm="4">
-                      <p class="text-label-caps text-medium-emphasis">Número de póliza</p>
-                      <p class="text-body-main">{{ vehiculo.numero_poliza ?? '—' }}</p>
-                    </v-col>
-                    <v-col cols="12" sm="4">
-                      <p class="text-label-caps text-medium-emphasis">Vencimiento</p>
-                      <div class="d-flex align-center ga-2">
-                        <p class="text-body-main">{{ vehiculo.fecha_vencimiento_poliza ?? '—' }}</p>
-                        <v-chip
-                          v-if="vehiculo.fecha_vencimiento_poliza"
-                          :color="estadoPoliza.color"
-                          size="small"
-                        >
-                          {{ estadoPoliza.texto }}
-                        </v-chip>
-                      </div>
+                      <p class="text-body-main mt-2">{{ campo.valor ?? '—' }}</p>
                     </v-col>
                   </v-row>
                 </v-card-text>

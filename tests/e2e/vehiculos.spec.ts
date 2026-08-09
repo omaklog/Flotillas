@@ -1227,13 +1227,13 @@ test.describe('Campos adicionales del vehículo y detalle agrupado en tarjetas (
 
     await page.goto(`/admin/vehiculos/${vehiculo!.id}`)
     await esperarHidratacion(page)
-    await expect(page.getByTestId('tarjeta-registro').getByText(vin)).toBeVisible()
-    await expect(page.getByTestId('tarjeta-registro').getByText('125000')).toBeVisible()
+    await expect(page.getByTestId('tarjeta-identificacion').getByText(vin)).toBeVisible()
+    await expect(page.getByTestId('tarjeta-identificacion').getByText('125000')).toBeVisible()
     await expect(page.getByTestId('tarjeta-especificaciones').getByText(combustible)).toBeVisible()
     await expect(page.getByTestId('tarjeta-especificaciones').getByText(transmision)).toBeVisible()
   })
 
-  test('T067: el detalle de solo lectura agrupa los campos en las 4 tarjetas de FR-026', async ({
+  test('T067: el detalle de solo lectura agrupa los campos en las 3 tarjetas de FR-026', async ({
     page
   }) => {
     const { admin, empresaId, tipoVehiculoId } = await empresaYTipoAdmin()
@@ -1284,14 +1284,13 @@ test.describe('Campos adicionales del vehículo y detalle agrupado en tarjetas (
     await expect(identificacion.getByText('2024')).toBeVisible()
     await expect(identificacion.getByText('Blanco')).toBeVisible()
     await expect(identificacion.getByText('Vehículo ligero')).toBeVisible()
-
-    const registro = page.getByTestId('tarjeta-registro')
-    await expect(registro).toBeVisible()
-    await expect(registro.getByText(`T067-${sufijo}`)).toBeVisible()
-    await expect(registro.getByText(`VIN${sufijo}`)).toBeVisible()
-    await expect(registro.getByText(`SERIE${sufijo}`)).toBeVisible()
-    await expect(registro.getByText(`MOTOR${sufijo}`)).toBeVisible()
-    await expect(registro.getByText('42000')).toBeVisible()
+    // "Registro y Seguimiento" se fusionó dentro de "Identificación del Vehículo" (feedback de
+    // diseño tras revisar el resultado en pantalla) — ya no es su propia tarjeta.
+    await expect(identificacion.getByText(`T067-${sufijo}`)).toBeVisible()
+    await expect(identificacion.getByText(`VIN${sufijo}`)).toBeVisible()
+    await expect(identificacion.getByText(`SERIE${sufijo}`)).toBeVisible()
+    await expect(identificacion.getByText(`MOTOR${sufijo}`)).toBeVisible()
+    await expect(identificacion.getByText('42000')).toBeVisible()
 
     const especificaciones = page.getByTestId('tarjeta-especificaciones')
     await expect(especificaciones).toBeVisible()
@@ -1304,9 +1303,9 @@ test.describe('Campos adicionales del vehículo y detalle agrupado en tarjetas (
     await expect(seguroPoliza.getByText(razonSocial)).toBeVisible()
     await expect(seguroPoliza.getByText(`POL-${sufijo}`)).toBeVisible()
 
-    // Los datos de identificación no deben duplicarse en la tarjeta de registro (agrupación
-    // real, no solo etiquetas nuevas sobre la misma cuadrícula plana).
-    await expect(registro.getByText(marca)).toHaveCount(0)
+    // Los datos de identificación no deben duplicarse en la tarjeta de especificaciones
+    // (agrupación real, no solo etiquetas nuevas sobre la misma cuadrícula plana).
+    await expect(especificaciones.getByText(marca)).toHaveCount(0)
   })
 
   test('T068: editar VIN, kilometraje actual, combustible y transmisión de un vehículo existente guarda los cambios', async ({
@@ -1353,7 +1352,7 @@ test.describe('Campos adicionales del vehículo y detalle agrupado en tarjetas (
     expect(actualizado!.combustible).toBe(nuevoCombustible)
     expect(actualizado!.transmision).toBe(nuevaTransmision)
 
-    await expect(page.getByTestId('tarjeta-registro').getByText(nuevoVin)).toBeVisible()
+    await expect(page.getByTestId('tarjeta-identificacion').getByText(nuevoVin)).toBeVisible()
     await expect(page.getByTestId('tarjeta-especificaciones').getByText(nuevoCombustible)).toBeVisible()
   })
 })

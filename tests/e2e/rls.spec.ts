@@ -526,4 +526,192 @@ test.describe('RLS — casos negativos (constitución §4)', () => {
       .list(`poliza/${empresaAjenaId}/${vehiculoAjeno!.id}`)
     expect(listado ?? []).toEqual([])
   })
+
+  // T045 (004-conductores, FR-018): caso POSITIVO y NEGATIVO juntos — constitución §2 "no basta
+  // con probar el camino permitido". El positivo (operario SÍ puede leer) es la mitad que
+  // `/speckit-analyze` encontró sin cobertura la primera vez que se escribió esta fase.
+  test('conductores: un operario con solo "ver" puede leer, pero no crear, editar, desactivar, reactivar ni eliminar conductores; tampoco subir a documentos/licencia ni documentos/poliza (US1-US6, FR-018)', async () => {
+    const admin = adminSupabaseClient()
+    const operario = await clienteAutenticado('operario-e2e@flotillas.local')
+    const {
+      data: { user }
+    } = await operario.auth.getUser()
+    const { data: perfil } = await operario
+      .from('usuarios')
+      .select('id, empresa_id')
+      .eq('auth_user_id', user!.id)
+      .single()
+
+    // Sembrado por el admin.
+    const { data: conductor } = await admin
+      .from('conductores')
+      .insert({
+        empresa_id: perfil!.empresa_id!,
+        nombre: 'Conductor RLS T045',
+        apellidos: 'X',
+        numero_licencia: `RLS-T045-${Date.now()}`,
+        tipo_licencia: 'federal',
+        fecha_vencimiento_licencia: '2030-01-01'
+      })
+      .select('id')
+      .single()
+
+    // Positivo: el operario SÍ puede leerlo (tiene 'ver').
+    const { data: leido } = await operario
+      .from('conductores')
+      .select('id, nombre')
+      .eq('id', conductor!.id)
+      .single()
+    expect(leido!.id).toBe(conductor!.id)
+
+    // Crear: bloqueado.
+    const { error: insertError } = await operario.from('conductores').insert({
+      empresa_id: perfil!.empresa_id!,
+      nombre: 'Intento Operario T045',
+      apellidos: 'X',
+      numero_licencia: `RLS-T045-INTENTO-${Date.now()}`,
+      tipo_licencia: 'federal',
+      fecha_vencimiento_licencia: '2030-01-01'
+    })
+    expect(insertError).not.toBeNull()
+    expect(insertError!.message).toMatch(/row-level security/i)
+
+    // Editar: bloqueado.
+    const { data: editado } = await operario
+      .from('conductores')
+      .update({ apellidos: 'Hackeado' })
+      .eq('id', conductor!.id)
+      .select()
+    expect(editado).toEqual([])
+
+    // Desactivar: bloqueado (es un UPDATE de activo/motivo_baja, misma política).
+    const { data: desactivado } = await operario
+      .from('conductores')
+      .update({ activo: false, motivo_baja: 'Intento operario' })
+      .eq('id', conductor!.id)
+      .select()
+    expect(desactivado).toEqual([])
+
+    // Reactivar: bloqueado (sembrado ya-inactivo por el admin, el operario intenta reactivar).
+    await admin
+      .from('conductores')
+      .update({ activo: false, motivo_baja: 'Sembrado por T045' })
+      .eq('id', conductor!.id)
+    const { data: reactivado } = await operario
+      .from('conductores')
+      .update({ activo: true })
+      .eq('id', conductor!.id)
+      .select()
+    expect(reactivado).toEqual([])
+
+    // Eliminar: bloqueado.
+    const { data: eliminado } = await operario.from('conductores').delete().eq('id', conductor!.id).select()
+    expect(eliminado).toEqual([])
+
+    // Subir a documentos/licencia/...: bloqueado (RLS de storage.objects, no tiene 'editar' en
+    // el módulo conductores).
+    const { error: errSubidaLicencia } = await operario.storage
+      .from('documentos')
+      .upload(
+        `licencia/${perfil!.empresa_id}/${conductor!.id}/intento-operario.pdf`,
+        Buffer.from('%PDF-1.4 intento'),
+        { contentType: 'application/pdf' }
+      )
+    expect(errSubidaLicencia).not.toBeNull()
+
+    // Tampoco puede subir a documentos/poliza/...: confirma que la generalización de las
+    // políticas de storage.objects (research.md R4 de 004-conductores) no le da, de paso, acceso
+    // de escritura sobre los archivos de otro módulo (vehiculos) solo por tener el de
+    // conductores.
+    const { data: tipoVehiculo } = await admin
+      .from('tipos_vehiculo')
+      .select('id')
+      .eq('empresa_id', perfil!.empresa_id!)
+      .eq('clave', 'ligero')
+      .single()
+    const { data: vehiculo } = await admin
+      .from('vehiculos')
+      .insert({
+        empresa_id: perfil!.empresa_id!,
+        marca: 'Vehículo RLS T045',
+        modelo: 'X',
+        placa: `RLS-T045-${Date.now()}`,
+        tipo_vehiculo_id: tipoVehiculo!.id
+      })
+      .select('id')
+      .single()
+    const { error: errSubidaPoliza } = await operario.storage
+      .from('documentos')
+      .upload(
+        `poliza/${perfil!.empresa_id}/${vehiculo!.id}/intento-operario.pdf`,
+        Buffer.from('%PDF-1.4 intento'),
+        { contentType: 'application/pdf' }
+      )
+    expect(errSubidaPoliza).not.toBeNull()
+
+    // Control positivo del negativo anterior: sigue existiendo, sin cambios.
+    const { data: sigueIgual } = await admin
+      .from('conductores')
+      .select('apellidos, activo')
+      .eq('id', conductor!.id)
+      .single()
+    expect(sigueIgual!.apellidos).toBe('X')
+    expect(sigueIgual!.activo).toBe(false)
+  })
+
+  // T046 (004-conductores, FR-017/SC-007): aislamiento del bucket `documentos` por empresa para
+  // archivos de licencia — mismo criterio que el test de `poliza` (T047 de 003-vehiculos) arriba,
+  // pero ejercitando el segmento `licencia` de la política generalizada (research.md R4).
+  test('documentos (licencia): un administrador de una empresa no puede generar una URL firmada válida ni listar la carpeta de licencia de otra empresa (SC-007)', async ({
+    request
+  }) => {
+    const rfc = `T${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).toUpperCase().slice(2, 6)}`
+    const correoAdminAjeno = `admin-rls-storage-licencia-${Date.now()}@flotillas.local`
+    const altaRespuesta = await request.post('/api/empresas', {
+      data: {
+        empresa: {
+          nombre: 'Empresa Ajena RLS Storage Licencia',
+          rfc,
+          pais: 'México',
+          moneda: 'MXN',
+          unidad_distancia: 'km',
+          unidad_combustible: 'litros'
+        },
+        administrador: { nombre: 'Admin Ajeno Storage Licencia', correo: correoAdminAjeno }
+      }
+    })
+    expect(altaRespuesta.status()).toBe(201)
+    const { empresa_id: empresaAjenaId } = await altaRespuesta.json()
+
+    const admin = adminSupabaseClient()
+    const { data: conductorAjeno } = await admin
+      .from('conductores')
+      .insert({
+        empresa_id: empresaAjenaId,
+        nombre: 'Conductor Ajeno T046',
+        apellidos: 'X',
+        numero_licencia: `RLS-T046-${Date.now()}`,
+        tipo_licencia: 'federal',
+        fecha_vencimiento_licencia: '2030-01-01'
+      })
+      .select('id')
+      .single()
+    const rutaAjena = `licencia/${empresaAjenaId}/${conductorAjeno!.id}/seed.pdf`
+    const { error: errSubida } = await admin.storage
+      .from('documentos')
+      .upload(rutaAjena, Buffer.from('%PDF-1.4 documento de otra empresa'), {
+        contentType: 'application/pdf'
+      })
+    expect(errSubida).toBeNull()
+
+    const adminPropio = await clienteAutenticado('admin-e2e@flotillas.local')
+
+    const { error: errFirma } = await adminPropio.storage.from('documentos').createSignedUrl(rutaAjena, 60)
+    expect(errFirma).not.toBeNull()
+
+    const { data: listado } = await adminPropio.storage
+      .from('documentos')
+      .list(`licencia/${empresaAjenaId}/${conductorAjeno!.id}`)
+    expect(listado ?? []).toEqual([])
+  })
 })

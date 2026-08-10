@@ -13,6 +13,11 @@
         <v-list-item to="/admin/usuarios" prepend-icon="mdi-account-group" title="Usuarios" />
         <v-list-item to="/admin/vehiculos" prepend-icon="mdi-truck-outline" title="Vehículos" />
         <v-list-item
+          to="/admin/conductores"
+          prepend-icon="mdi-card-account-details-outline"
+          title="Conductores"
+        />
+        <v-list-item
           to="/admin/tipos-vehiculo"
           prepend-icon="mdi-car-outline"
           title="Tipos de Vehículo"

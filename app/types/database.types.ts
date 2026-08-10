@@ -184,6 +184,68 @@ export type Database = {
           },
         ]
       }
+      asignaciones_conductor_vehiculo: {
+        Row: {
+          asignado_por: string
+          conductor_id: string
+          created_at: string
+          empresa_id: string
+          fecha_fin: string | null
+          fecha_inicio: string
+          id: string
+          vehiculo_id: string
+        }
+        Insert: {
+          asignado_por: string
+          conductor_id: string
+          created_at?: string
+          empresa_id: string
+          fecha_fin?: string | null
+          fecha_inicio?: string
+          id?: string
+          vehiculo_id: string
+        }
+        Update: {
+          asignado_por?: string
+          conductor_id?: string
+          created_at?: string
+          empresa_id?: string
+          fecha_fin?: string | null
+          fecha_inicio?: string
+          id?: string
+          vehiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asignaciones_conductor_vehiculo_asignado_por_fkey"
+            columns: ["asignado_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignaciones_conductor_vehiculo_conductor_id_fkey"
+            columns: ["conductor_id"]
+            isOneToOne: false
+            referencedRelation: "conductores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignaciones_conductor_vehiculo_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignaciones_conductor_vehiculo_vehiculo_id_fkey"
+            columns: ["vehiculo_id"]
+            isOneToOne: false
+            referencedRelation: "vehiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       auditoria: {
         Row: {
           accion: Database["public"]["Enums"]["accion_auditoria"]
@@ -445,6 +507,7 @@ export type Database = {
           fecha_vencimiento_licencia: string
           id: string
           licencia_archivo_id: string | null
+          motivo_baja: string | null
           nombre: string
           numero: string | null
           numero_licencia: string
@@ -462,6 +525,7 @@ export type Database = {
           fecha_vencimiento_licencia: string
           id?: string
           licencia_archivo_id?: string | null
+          motivo_baja?: string | null
           nombre: string
           numero?: string | null
           numero_licencia: string
@@ -479,6 +543,7 @@ export type Database = {
           fecha_vencimiento_licencia?: string
           id?: string
           licencia_archivo_id?: string | null
+          motivo_baja?: string | null
           nombre?: string
           numero?: string | null
           numero_licencia?: string

@@ -50,6 +50,15 @@
 - Accesibilidad mínima: WCAG 2.1 AA en formularios y tablas de captura.
 - Todo módulo con fechas de vencimiento (licencias, pólizas, permisos, servicios obligatorios)
   debe implementar su alerta automática correspondiente antes de considerarse completo.
+  **Excepción documentada** (encontrada por `/speckit-analyze` sobre Feature 004 — Conductores,
+  2026-08-09): hasta que exista una feature dedicada de Alertas/Dashboard, ninguna feature
+  individual con fecha de vencimiento (Vehículos, Conductores, y las que sigan — Mantenimiento,
+  Servicios Obligatorios) implementa su propia alerta aislada; el indicador visual de vigencia
+  (badge vencida/por vencer/vigente en el listado y detalle) satisface la necesidad inmediata de
+  visibilidad mientras tanto. Cada `spec.md` de esas features MUST declarar esto explícitamente en
+  su sección "Fuera de Alcance" (no dejarlo implícito) para que la excepción sea rastreable, no un
+  MUST silenciosamente incumplido. La feature de Alertas/Dashboard, cuando se especifique, absorbe
+  la deuda acumulada de todas ellas de una sola vez.
 
 ## 5. Proceso
 - Se sigue el flujo Spec Kit: `constitution → specify → clarify → plan → tasks → analyze → implement`.

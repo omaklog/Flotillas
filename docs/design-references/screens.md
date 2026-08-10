@@ -77,4 +77,14 @@ no se puede verificar. Tampoco se replica la subetiqueta "Póliza Anual 2026-202
 implementó igual: permite reemplazar la póliza directamente desde esta pestaña además de desde
 Editar (spec.md FR-011a).
 
+**Feature 004 — Conductores**: no tiene captura propia de Stitch. Reutiliza deliberadamente el
+lenguaje visual de `../design-system.md` más los patrones de layout ya construidos y validados en
+Vehículos (003) — listado en `v-table` con buscador y badge de vigencia
+(`listado-flotilla-vehiculos-v2.png` como referencia de patrón), detalle de solo lectura con
+historial de archivo en tabla (acciones "Ver"/"Descargar"/"Subir Nueva Licencia", idéntico al
+rediseño de `HistorialPoliza.vue`) — sin generar un mockup pixel-a-pixel nuevo (research.md R10 de
+`specs/004-conductores/`). Si en algún punto se genera una referencia real de Stitch para
+Conductores, se sigue la regla de `CLAUDE.md` de ajustarse a ella antes de seguir iterando
+visualmente.
+
 Proyecto de origen en Stitch: `projects/4499192746969655413` ("FleetControl Enterprise").

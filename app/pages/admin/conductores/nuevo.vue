@@ -27,12 +27,16 @@ type ConductorValores = Omit<
   'empresa_id' | 'licencia_archivo_id'
 >
 
-const { crear, adjuntarLicencia, error: errorConductores } = useConductores()
+const { crear, adjuntarLicencia, adjuntarFoto, error: errorConductores } = useConductores()
 
 const enviando = ref(false)
 const errorMsg = ref<string | null>(null)
 
-async function onEnviar(valores: ConductorValores, archivoLicencia: File | null) {
+async function onEnviar(
+  valores: ConductorValores,
+  archivoLicencia: File | null,
+  archivoFoto: File | null
+) {
   enviando.value = true
   errorMsg.value = null
   let conductorId: string
@@ -44,12 +48,20 @@ async function onEnviar(valores: ConductorValores, archivoLicencia: File | null)
     return
   }
 
-  // Si la subida falla, el conductor del paso 1 ya quedó creado — no se pierde el alta (FR-005).
+  // Si cualquiera de las dos subidas falla, el conductor del paso 1 ya quedó creado — no se
+  // pierde el alta (FR-005, mismo criterio para la foto).
   if (archivoLicencia) {
     try {
       await adjuntarLicencia(conductorId, archivoLicencia)
     } catch {
       // Silencioso a propósito: el admin puede adjuntar la licencia después editando el registro.
+    }
+  }
+  if (archivoFoto) {
+    try {
+      await adjuntarFoto(conductorId, archivoFoto)
+    } catch {
+      // Silencioso a propósito.
     }
   }
 

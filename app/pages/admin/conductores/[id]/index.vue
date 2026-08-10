@@ -66,30 +66,70 @@
       </v-tabs>
 
       <v-window v-model="tabActiva">
+        <!-- 2 tarjetas lado a lado siguiendo detalle-conductor-datos-generales.png
+        (research.md R4 de specs/006-foto-conductor/): a diferencia de Vehículos (foto embebida
+        dentro de la tarjeta de datos), esta referencia separa la foto en su propia tarjeta
+        angosta con nombre y chip de tipo de licencia debajo. -->
         <v-window-item value="datos" data-testid="datos-conductor">
-          <v-card class="app-card-shadow" variant="flat">
-            <v-card-text>
-              <h2 class="text-section-title d-flex align-center pb-3 mb-4 border-b">
-                <v-icon icon="mdi-card-account-details-outline" color="primary" class="mr-2" />
-                Datos del conductor
-              </h2>
-              <v-row>
-                <v-col v-for="campo in campos" :key="campo.label" cols="12" sm="6">
-                  <p class="text-label-caps text-medium-emphasis">{{ campo.label }}</p>
-                  <p class="text-body-main mt-2">{{ campo.valor ?? '—' }}</p>
-                </v-col>
-                <v-col cols="12" sm="6">
-                  <p class="text-label-caps text-medium-emphasis">Vencimiento de licencia</p>
-                  <div class="d-flex align-center ga-2 mt-2">
-                    <p class="text-body-main">{{ conductor.fecha_vencimiento_licencia }}</p>
-                    <v-chip :color="estadoLicencia.color" size="small">
-                      {{ estadoLicencia.texto }}
-                    </v-chip>
+          <v-row>
+            <v-col cols="12" md="4">
+              <v-card class="app-card-shadow" variant="flat" data-testid="tarjeta-foto-conductor">
+                <v-card-text class="d-flex flex-column align-center text-center">
+                  <v-img
+                    v-if="fotoUrl"
+                    :src="fotoUrl"
+                    alt="Foto del conductor"
+                    width="200"
+                    height="200"
+                    cover
+                    rounded
+                    class="mb-4"
+                    data-testid="foto-conductor"
+                  />
+                  <div
+                    v-else
+                    class="d-flex align-center justify-center bg-surface rounded mb-4"
+                    style="width: 200px; height: 200px; border: 1px dashed rgb(var(--v-theme-outline))"
+                    data-testid="foto-conductor-vacia"
+                  >
+                    <v-icon icon="mdi-account" size="64" color="grey" />
                   </div>
-                </v-col>
-              </v-row>
-            </v-card-text>
-          </v-card>
+                  <p class="text-body-main font-weight-medium">
+                    {{ conductor.nombre }} {{ conductor.apellidos }}
+                  </p>
+                  <v-chip class="mt-2" size="small">
+                    Conductor {{ conductor.tipo_licencia === 'federal' ? 'Federal' : 'Local' }}
+                  </v-chip>
+                </v-card-text>
+              </v-card>
+            </v-col>
+
+            <v-col cols="12" md="8">
+              <v-card class="app-card-shadow" variant="flat" data-testid="tarjeta-datos-conductor">
+                <v-card-text>
+                  <h2 class="text-section-title d-flex align-center pb-3 mb-4 border-b">
+                    <v-icon icon="mdi-card-account-details-outline" color="primary" class="mr-2" />
+                    Datos del conductor
+                  </h2>
+                  <v-row>
+                    <v-col v-for="campo in campos" :key="campo.label" cols="12" sm="6">
+                      <p class="text-label-caps text-medium-emphasis">{{ campo.label }}</p>
+                      <p class="text-body-main mt-2">{{ campo.valor ?? '—' }}</p>
+                    </v-col>
+                    <v-col cols="12" sm="6">
+                      <p class="text-label-caps text-medium-emphasis">Vencimiento de licencia</p>
+                      <div class="d-flex align-center ga-2 mt-2">
+                        <p class="text-body-main">{{ conductor.fecha_vencimiento_licencia }}</p>
+                        <v-chip :color="estadoLicencia.color" size="small">
+                          {{ estadoLicencia.texto }}
+                        </v-chip>
+                      </div>
+                    </v-col>
+                  </v-row>
+                </v-card-text>
+              </v-card>
+            </v-col>
+          </v-row>
         </v-window-item>
 
         <v-window-item value="historial">
@@ -117,11 +157,12 @@ definePageMeta({ layout: 'admin' })
 const route = useRoute()
 const conductorId = route.params.id as string
 
-const { desactivar, reactivar, error: errorConductores } = useConductores()
+const { desactivar, reactivar, descargarArchivo, error: errorConductores } = useConductores()
 const client = useSupabaseClient()
 
 const cargando = ref(true)
 const conductor = ref<ConductorRow | null>(null)
+const fotoUrl = ref<string | null>(null)
 const tabActiva = ref('datos')
 
 const dialogoDesactivarAbierto = ref(false)
@@ -163,6 +204,18 @@ async function cargar() {
     .eq('id', conductorId)
     .maybeSingle()
   conductor.value = data
+
+  fotoUrl.value = null
+  if (conductor.value?.foto_archivo_id) {
+    const { data: foto } = await client
+      .from('archivos')
+      .select('storage_path')
+      .eq('id', conductor.value.foto_archivo_id)
+      .maybeSingle()
+    if (foto) {
+      fotoUrl.value = await descargarArchivo(foto.storage_path)
+    }
+  }
 }
 
 onMounted(async () => {

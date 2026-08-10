@@ -505,6 +505,7 @@ export type Database = {
           created_at: string
           empresa_id: string
           fecha_vencimiento_licencia: string
+          foto_archivo_id: string | null
           id: string
           licencia_archivo_id: string | null
           motivo_baja: string | null
@@ -523,6 +524,7 @@ export type Database = {
           created_at?: string
           empresa_id: string
           fecha_vencimiento_licencia: string
+          foto_archivo_id?: string | null
           id?: string
           licencia_archivo_id?: string | null
           motivo_baja?: string | null
@@ -541,6 +543,7 @@ export type Database = {
           created_at?: string
           empresa_id?: string
           fecha_vencimiento_licencia?: string
+          foto_archivo_id?: string | null
           id?: string
           licencia_archivo_id?: string | null
           motivo_baja?: string | null
@@ -556,6 +559,13 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conductores_foto_archivo_id_fkey"
+            columns: ["foto_archivo_id"]
+            isOneToOne: false
+            referencedRelation: "archivos"
             referencedColumns: ["id"]
           },
           {
@@ -1317,7 +1327,12 @@ export type Database = {
       estado_registro: "activo" | "cancelado"
       resultado_checklist: "aprobado" | "con_observaciones"
       rol_usuario: "superusuario" | "admin" | "operario"
-      tipo_archivo: "poliza" | "licencia" | "factura" | "foto"
+      tipo_archivo:
+        | "poliza"
+        | "licencia"
+        | "factura"
+        | "foto"
+        | "foto_conductor"
       tipo_licencia: "federal" | "local"
       tipo_mantenimiento: "correctivo" | "preventivo"
       tipo_permiso: "estatal" | "federal"
@@ -1476,7 +1491,7 @@ export const Constants = {
       estado_registro: ["activo", "cancelado"],
       resultado_checklist: ["aprobado", "con_observaciones"],
       rol_usuario: ["superusuario", "admin", "operario"],
-      tipo_archivo: ["poliza", "licencia", "factura", "foto"],
+      tipo_archivo: ["poliza", "licencia", "factura", "foto", "foto_conductor"],
       tipo_licencia: ["federal", "local"],
       tipo_mantenimiento: ["correctivo", "preventivo"],
       tipo_permiso: ["estatal", "federal"],

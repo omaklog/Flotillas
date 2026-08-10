@@ -46,7 +46,7 @@ const route = useRoute()
 const conductorId = route.params.id as string
 
 const client = useSupabaseClient<Database>()
-const { editar, adjuntarLicencia, error: errorConductores } = useConductores()
+const { editar, adjuntarLicencia, adjuntarFoto, error: errorConductores } = useConductores()
 
 const cargando = ref(true)
 const conductor = ref<ConductorRow | null>(null)
@@ -64,7 +64,11 @@ onMounted(async () => {
   cargando.value = false
 })
 
-async function onEditar(valores: ConductorValores, archivoLicencia: File | null) {
+async function onEditar(
+  valores: ConductorValores,
+  archivoLicencia: File | null,
+  archivoFoto: File | null
+) {
   enviando.value = true
   errorMsg.value = null
   try {
@@ -75,11 +79,18 @@ async function onEditar(valores: ConductorValores, archivoLicencia: File | null)
     return
   }
 
-  // Si la subida falla, la edición de datos ya quedó guardada — no se pierde (mismo criterio que
-  // el alta, FR-005).
+  // Si cualquiera de las dos subidas falla, la edición de datos ya quedó guardada — no se pierde
+  // (mismo criterio que el alta, FR-005).
   if (archivoLicencia) {
     try {
       await adjuntarLicencia(conductorId, archivoLicencia)
+    } catch {
+      // Silencioso a propósito.
+    }
+  }
+  if (archivoFoto) {
+    try {
+      await adjuntarFoto(conductorId, archivoFoto)
     } catch {
       // Silencioso a propósito.
     }

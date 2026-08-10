@@ -127,6 +127,69 @@ export function useConductores() {
     }
   }
 
+  /** Alta / reemplazo en edición: sin historial (FR-003/FR-004), calcado de
+   * `adjuntarFoto()` de `useVehiculos.ts` — la foto anterior (si había) se borra, pero solo
+   * *después* de que la nueva ya quedó vinculada exitosamente, para nunca perder la vigente si un
+   * paso intermedio falla (contracts/foto-conductor.md). */
+  async function adjuntarFoto(conductorId: string, archivo: File) {
+    error.value = null
+    const empresaId = usuario.value!.empresa_id!
+    const ruta = `foto_conductor/${empresaId}/${conductorId}/${nombreArchivoUnico(archivo.name)}`
+
+    const { data: conductorActual } = await client
+      .from('conductores')
+      .select('foto_archivo_id')
+      .eq('id', conductorId)
+      .single()
+    const fotoAnteriorId = conductorActual?.foto_archivo_id ?? null
+
+    const { error: errSubida } = await client.storage
+      .from(BUCKET)
+      .upload(ruta, archivo, { contentType: archivo.type })
+    if (errSubida) {
+      error.value = 'No se pudo subir la foto del conductor.'
+      throw errSubida
+    }
+
+    const { data: archivoRow, error: errArchivo } = await client
+      .from('archivos')
+      .insert({
+        empresa_id: empresaId,
+        tipo: 'foto_conductor',
+        storage_path: ruta,
+        entidad_tipo: 'conductor',
+        entidad_id: conductorId,
+        subido_por: usuario.value!.id
+      })
+      .select('id')
+      .single()
+    if (errArchivo) {
+      error.value = errArchivo.message
+      throw errArchivo
+    }
+
+    const { error: errUpdate } = await client
+      .from('conductores')
+      .update({ foto_archivo_id: archivoRow.id })
+      .eq('id', conductorId)
+    if (errUpdate) {
+      error.value = errUpdate.message
+      throw errUpdate
+    }
+
+    if (fotoAnteriorId) {
+      const { data: anterior } = await client
+        .from('archivos')
+        .select('storage_path')
+        .eq('id', fotoAnteriorId)
+        .maybeSingle()
+      await client.from('archivos').delete().eq('id', fotoAnteriorId)
+      if (anterior) {
+        await client.storage.from(BUCKET).remove([anterior.storage_path])
+      }
+    }
+  }
+
   async function desactivar(id: string, motivo: string) {
     error.value = null
     const { error: err } = await client
@@ -217,6 +280,7 @@ export function useConductores() {
     crear,
     editar,
     adjuntarLicencia,
+    adjuntarFoto,
     desactivar,
     reactivar,
     eliminar,

@@ -838,4 +838,123 @@ test.describe('RLS — casos negativos (constitución §4)', () => {
       .eq('modulo_clave', 'vehiculos')
       .eq('accion', 'editar')
   })
+
+  // T019 (006-foto-conductor, FR-007, SC-003): caso positivo — constitución §2 "no basta con
+  // probar el camino permitido". Un operario con 'editar' otorgado ÚNICAMENTE en 'conductores'
+  // (sin 'vehiculos') debe poder subir a documentos/foto_conductor/..., mismo permiso que ya le
+  // alcanza para la licencia (research.md R2 de 006-foto-conductor). El caso negativo (operario
+  // sin ese permiso, bloqueado) ya lo cubre el test de arriba "conductores: un operario con solo
+  // 'ver'..." sobre el segmento `licencia` — la cláusula de RLS de `foto_conductor` es
+  // estructuralmente idéntica (mismo `tiene_permiso('conductores','editar')`). No se repite aquí
+  // como pre-chequeo porque esta suite corre en paralelo en 4 proyectos de Playwright
+  // (admin/operario/superusuario/anonimo) contra el mismo usuario `operario-e2e` compartido: un
+  // pre-chequeo negativo local puede correr justo cuando OTRO proyecto ya otorgó el permiso vía
+  // el `insert` de abajo, dando un falso negativo intermitente (confirmado al reproducirlo).
+  test('documentos (foto_conductor): un operario con "editar" otorgado únicamente en conductores puede subir la foto de un conductor (FR-007, SC-003)', async () => {
+    const admin = adminSupabaseClient()
+    const operario = await clienteAutenticado('operario-e2e@flotillas.local')
+    const {
+      data: { user }
+    } = await operario.auth.getUser()
+    const { data: perfil } = await operario
+      .from('usuarios')
+      .select('id, empresa_id')
+      .eq('auth_user_id', user!.id)
+      .single()
+
+    // Sufijo con entropía extra (no solo Date.now()): este test corre en paralelo en varios
+    // proyectos de Playwright (admin/operario/superusuario/anonimo) contra la misma empresa E2E,
+    // y dos workers pueden ejecutar este insert en el mismo milisegundo — Date.now() a secas
+    // choca contra UNIQUE(empresa_id, numero_licencia) y deja `conductor` en null.
+    const sufijo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const { data: conductor } = await admin
+      .from('conductores')
+      .insert({
+        empresa_id: perfil!.empresa_id!,
+        nombre: 'Conductor RLS T019',
+        apellidos: 'X',
+        numero_licencia: `RLS-T019-${sufijo}`,
+        tipo_licencia: 'federal',
+        fecha_vencimiento_licencia: '2030-01-01'
+      })
+      .select('id')
+      .single()
+
+    // Positivo: con 'editar' otorgado SOLO en 'conductores' (no 'vehiculos'), sí puede.
+    await admin.from('usuario_permisos').insert({
+      empresa_id: perfil!.empresa_id!,
+      usuario_id: perfil!.id,
+      modulo_clave: 'conductores',
+      accion: 'editar',
+      otorgado_por: perfil!.id
+    })
+    const { error: errConPermiso } = await operario.storage
+      .from('documentos')
+      .upload(
+        `foto_conductor/${perfil!.empresa_id}/${conductor!.id}/con-permiso.jpg`,
+        Buffer.from('foto de prueba'),
+        { contentType: 'image/jpeg' }
+      )
+    expect(errConPermiso).toBeNull()
+    await admin
+      .from('usuario_permisos')
+      .delete()
+      .eq('usuario_id', perfil!.id)
+      .eq('modulo_clave', 'conductores')
+      .eq('accion', 'editar')
+  })
+
+  // T020 (006-foto-conductor): aislamiento del bucket `documentos` por empresa para archivos de
+  // foto_conductor — mismo criterio que el test de `licencia` arriba, ejercitando el segmento
+  // foto_conductor de la política generalizada (research.md R2 de 006-foto-conductor).
+  test('documentos (foto_conductor): un administrador de una empresa no puede generar una URL firmada válida ni listar la carpeta de foto de un conductor de otra empresa', async ({
+    request
+  }) => {
+    const rfc = `T${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).toUpperCase().slice(2, 6)}`
+    const correoAdminAjeno = `admin-rls-storage-foto-conductor-${Date.now()}@flotillas.local`
+    const altaRespuesta = await request.post('/api/empresas', {
+      data: {
+        empresa: {
+          nombre: 'Empresa Ajena RLS Storage Foto Conductor',
+          rfc,
+          pais: 'México',
+          moneda: 'MXN',
+          unidad_distancia: 'km',
+          unidad_combustible: 'litros'
+        },
+        administrador: { nombre: 'Admin Ajeno Storage Foto Conductor', correo: correoAdminAjeno }
+      }
+    })
+    expect(altaRespuesta.status()).toBe(201)
+    const { empresa_id: empresaAjenaId } = await altaRespuesta.json()
+
+    const admin = adminSupabaseClient()
+    const { data: conductorAjeno } = await admin
+      .from('conductores')
+      .insert({
+        empresa_id: empresaAjenaId,
+        nombre: 'Conductor Ajeno T020',
+        apellidos: 'X',
+        numero_licencia: `RLS-T020-${Date.now()}`,
+        tipo_licencia: 'federal',
+        fecha_vencimiento_licencia: '2030-01-01'
+      })
+      .select('id')
+      .single()
+    const rutaAjena = `foto_conductor/${empresaAjenaId}/${conductorAjeno!.id}/seed.jpg`
+    const { error: errSubida } = await admin.storage
+      .from('documentos')
+      .upload(rutaAjena, Buffer.from('foto de otra empresa'), { contentType: 'image/jpeg' })
+    expect(errSubida).toBeNull()
+
+    const adminPropio = await clienteAutenticado('admin-e2e@flotillas.local')
+
+    const { error: errFirma } = await adminPropio.storage.from('documentos').createSignedUrl(rutaAjena, 60)
+    expect(errFirma).not.toBeNull()
+
+    const { data: listado } = await adminPropio.storage
+      .from('documentos')
+      .list(`foto_conductor/${empresaAjenaId}/${conductorAjeno!.id}`)
+    expect(listado ?? []).toEqual([])
+  })
 })

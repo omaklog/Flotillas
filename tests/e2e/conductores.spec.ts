@@ -28,6 +28,10 @@ function pdfDePrueba(nombre = 'licencia.pdf') {
   return { name: nombre, mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 contenido de prueba') }
 }
 
+function fotoDePrueba(nombre = 'foto.jpg') {
+  return { name: nombre, mimeType: 'image/jpeg', buffer: Buffer.from('contenido de foto de prueba') }
+}
+
 function fechaEnDias(dias: number): string {
   const fecha = new Date()
   fecha.setDate(fecha.getDate() + dias)
@@ -68,6 +72,36 @@ async function sembrarVersionLicencia(
     .insert({
       empresa_id: opciones.empresaId,
       tipo: 'licencia',
+      storage_path: ruta,
+      entidad_tipo: 'conductor',
+      entidad_id: opciones.conductorId,
+      subido_por: opciones.subidoPor
+    })
+    .select('id')
+    .single()
+  return { id: archivo!.id, storagePath: ruta }
+}
+
+/** Igual que `sembrarVersionLicencia`, pero `tipo: 'foto_conductor'` — la foto NO tiene
+ * historial, así que quien llama a esto además debe actualizar `conductores.foto_archivo_id` si
+ * quiere que sea "la vigente" (mismo criterio que `sembrarVersionFoto` de vehiculos.spec.ts). */
+async function sembrarVersionFoto(
+  admin: ReturnType<typeof adminSupabaseClient>,
+  opciones: { empresaId: string; conductorId: string; subidoPor: string; nombreArchivo: string }
+) {
+  const ruta = `foto_conductor/${opciones.empresaId}/${opciones.conductorId}/${opciones.nombreArchivo}`
+  const { error: errSubida } = await admin.storage
+    .from('documentos')
+    .upload(ruta, Buffer.from(`foto de prueba ${opciones.nombreArchivo}`), {
+      contentType: 'image/jpeg'
+    })
+  if (errSubida) throw errSubida
+
+  const { data: archivo } = await admin
+    .from('archivos')
+    .insert({
+      empresa_id: opciones.empresaId,
+      tipo: 'foto_conductor',
       storage_path: ruta,
       entidad_tipo: 'conductor',
       entidad_id: opciones.conductorId,
@@ -373,7 +407,7 @@ test.describe('US3 — Administrador consulta el detalle de un conductor sin ent
     await page.goto(`/admin/conductores/${conductorId}`)
     await esperarHidratacion(page)
 
-    await expect(page.getByTestId('datos-conductor').getByText(nombre)).toBeVisible()
+    await expect(page.getByTestId('tarjeta-datos-conductor').getByText(nombre)).toBeVisible()
     await expect(page.getByTestId('editar-btn')).toBeVisible()
     // Modo solo lectura: ni el botón de envío del formulario ni sus campos editables existen.
     await expect(page.getByTestId('submit-btn')).toHaveCount(0)
@@ -414,7 +448,7 @@ test.describe('US4 — Administrador edita un conductor y gestiona el historial 
 
     await page.waitForURL((url) => url.pathname === `/admin/conductores/${conductorId}`)
     await esperarHidratacion(page)
-    await expect(page.getByTestId('datos-conductor').getByText(nuevoApellido)).toBeVisible()
+    await expect(page.getByTestId('tarjeta-datos-conductor').getByText(nuevoApellido)).toBeVisible()
   })
 
   test('T026: la acción "Editar" desde el detalle navega al formulario con los datos precargados', async ({
@@ -445,7 +479,7 @@ test.describe('US4 — Administrador edita un conductor y gestiona el historial 
 
     await page.waitForURL((url) => url.pathname === `/admin/conductores/${conductorId}`)
     await esperarHidratacion(page)
-    await expect(page.getByTestId('datos-conductor').getByText(nuevoApellido)).toBeVisible()
+    await expect(page.getByTestId('tarjeta-datos-conductor').getByText(nuevoApellido)).toBeVisible()
     await expect(page.getByTestId('submit-btn')).toHaveCount(0)
   })
 
@@ -827,5 +861,227 @@ test.describe('US6 — Administrador elimina definitivamente un conductor sin de
         { timeout: 10_000 }
       )
       .toBeNull()
+  })
+})
+
+test.describe('Foto del Conductor (FR-001 a FR-007)', () => {
+  test.use({ storageState: 'tests/e2e/.auth/admin.json' })
+
+  async function sembrarConductor(prefijo: string) {
+    const { admin, empresaId, adminId } = await empresaAdmin()
+    const sufijo = Date.now()
+    const nombre = `Nombre ${prefijo} ${sufijo}`
+    const { data: conductor } = await admin
+      .from('conductores')
+      .insert({
+        empresa_id: empresaId,
+        nombre,
+        apellidos: `Apellido ${prefijo}`,
+        numero_licencia: `${prefijo}-${sufijo}`,
+        tipo_licencia: 'federal',
+        fecha_vencimiento_licencia: '2030-01-01'
+      })
+      .select('id')
+      .single()
+    return { admin, empresaId, adminId, conductorId: conductor!.id as string, nombre }
+  }
+
+  test('T009: adjuntar una foto durante el alta la deja visible en el detalle del conductor', async ({
+    page
+  }) => {
+    const nombre = `Foto T009 ${Date.now()}`
+    const numeroLicencia = `T009-${Date.now()}`
+
+    await page.goto('/admin/conductores/nuevo')
+    await esperarHidratacion(page)
+    await page.getByLabel('Nombre', { exact: true }).fill(nombre)
+    await page.getByLabel('Apellidos', { exact: true }).fill('Foto')
+    await page.getByLabel('Número de licencia', { exact: true }).fill(numeroLicencia)
+    await page.getByRole('combobox', { name: 'Tipo de licencia' }).click()
+    await page.getByRole('option', { name: 'Federal', exact: true }).click()
+    await page.getByLabel('Fecha de vencimiento', { exact: true }).fill('2030-01-01')
+    await page.getByTestId('foto-input').setInputFiles(fotoDePrueba())
+    await page.getByTestId('submit-btn').click()
+
+    await page.waitForURL((url) => url.pathname === '/admin/conductores', { timeout: 10_000 })
+
+    const admin = adminSupabaseClient()
+    await expect
+      .poll(
+        async () => {
+          const { data } = await admin
+            .from('conductores')
+            .select('foto_archivo_id')
+            .eq('numero_licencia', numeroLicencia)
+            .single()
+          return data?.foto_archivo_id ?? null
+        },
+        { timeout: 10_000 }
+      )
+      .not.toBeNull()
+
+    const { data: conductor } = await admin
+      .from('conductores')
+      .select('id, foto_archivo_id')
+      .eq('numero_licencia', numeroLicencia)
+      .single()
+    expect(conductor!.foto_archivo_id).not.toBeNull()
+
+    await page.goto(`/admin/conductores/${conductor!.id}`)
+    await esperarHidratacion(page)
+    await expect(page.getByTestId('foto-conductor')).toBeVisible()
+  })
+
+  test('T010: adjuntar una foto después, editando un conductor sin foto previa, la deja visible en el detalle', async ({
+    page
+  }) => {
+    const { conductorId } = await sembrarConductor('T010')
+
+    await page.goto(`/admin/conductores/${conductorId}/editar`)
+    await esperarHidratacion(page)
+    await expect(page.getByTestId('foto-conductor-vacia')).toHaveCount(0)
+    await page.getByTestId('foto-input').setInputFiles(fotoDePrueba())
+    await page.getByTestId('submit-btn').click()
+
+    await page.waitForURL((url) => url.pathname === `/admin/conductores/${conductorId}`, {
+      timeout: 10_000
+    })
+    await esperarHidratacion(page)
+    await expect(page.getByTestId('foto-conductor')).toBeVisible()
+  })
+
+  test('T011: reemplazar la foto de un conductor deja la nueva visible y elimina la anterior, sin historial', async ({
+    page
+  }) => {
+    const { admin, conductorId, adminId, empresaId } = await sembrarConductor('T011')
+    const v1 = await sembrarVersionFoto(admin, {
+      empresaId,
+      conductorId,
+      subidoPor: adminId,
+      nombreArchivo: 'seed-v1.jpg'
+    })
+    await admin.from('conductores').update({ foto_archivo_id: v1.id }).eq('id', conductorId)
+
+    await page.goto(`/admin/conductores/${conductorId}/editar`)
+    await esperarHidratacion(page)
+    await page.getByTestId('foto-input').setInputFiles(fotoDePrueba('reemplazo.jpg'))
+    await page.getByTestId('submit-btn').click()
+
+    await expect
+      .poll(
+        async () => {
+          const { data } = await admin
+            .from('conductores')
+            .select('foto_archivo_id')
+            .eq('id', conductorId)
+            .single()
+          return data?.foto_archivo_id
+        },
+        { timeout: 10_000 }
+      )
+      .not.toBe(v1.id)
+
+    const { data: archivoV1Aun } = await admin
+      .from('archivos')
+      .select('id')
+      .eq('id', v1.id)
+      .maybeSingle()
+    expect(archivoV1Aun).toBeNull()
+  })
+
+  test('T012: un archivo de foto con tipo o tamaño inválido se rechaza antes de subirse', async ({
+    page
+  }) => {
+    await page.goto('/admin/conductores/nuevo')
+    await esperarHidratacion(page)
+    await page.getByTestId('foto-input').setInputFiles(pdfDePrueba('no-es-foto.pdf'))
+
+    await expect(page.getByText(/la foto debe ser jpg o png/i)).toBeVisible()
+    await expect(page.getByLabel('Nombre', { exact: true })).toBeEditable()
+  })
+
+  test('T013: si la subida de la foto falla durante el alta, el conductor queda creado igual, sin foto (FR-005)', async ({
+    page
+  }) => {
+    const nombre = `Foto T013 ${Date.now()}`
+    const numeroLicencia = `T013-${Date.now()}`
+
+    await page.route('**/storage/v1/object/documentos/foto_conductor/**', (route) =>
+      route.fulfill({ status: 500, body: 'Fallo simulado de subida de foto (T013)' })
+    )
+
+    await page.goto('/admin/conductores/nuevo')
+    await esperarHidratacion(page)
+    await page.getByLabel('Nombre', { exact: true }).fill(nombre)
+    await page.getByLabel('Apellidos', { exact: true }).fill('Foto')
+    await page.getByLabel('Número de licencia', { exact: true }).fill(numeroLicencia)
+    await page.getByRole('combobox', { name: 'Tipo de licencia' }).click()
+    await page.getByRole('option', { name: 'Federal', exact: true }).click()
+    await page.getByLabel('Fecha de vencimiento', { exact: true }).fill('2030-01-01')
+    await page.getByTestId('foto-input').setInputFiles(fotoDePrueba())
+    await page.getByTestId('submit-btn').click()
+
+    await expect
+      .poll(
+        async () => {
+          const admin = adminSupabaseClient()
+          const { data } = await admin
+            .from('conductores')
+            .select('id')
+            .eq('numero_licencia', numeroLicencia)
+            .maybeSingle()
+          return data?.id ?? null
+        },
+        { timeout: 10_000 }
+      )
+      .not.toBeNull()
+
+    const admin = adminSupabaseClient()
+    const { data: conductor } = await admin
+      .from('conductores')
+      .select('foto_archivo_id')
+      .eq('numero_licencia', numeroLicencia)
+      .single()
+    expect(conductor!.foto_archivo_id).toBeNull()
+  })
+
+  test('T014: si la subida de una foto nueva falla durante un reemplazo, la foto anterior sigue siendo la vigente (FR-004)', async ({
+    page
+  }) => {
+    const { admin, conductorId, adminId, empresaId } = await sembrarConductor('T014')
+    const v1 = await sembrarVersionFoto(admin, {
+      empresaId,
+      conductorId,
+      subidoPor: adminId,
+      nombreArchivo: 'seed-v1.jpg'
+    })
+    await admin.from('conductores').update({ foto_archivo_id: v1.id }).eq('id', conductorId)
+
+    await page.route('**/storage/v1/object/documentos/foto_conductor/**', (route) =>
+      route.fulfill({ status: 500, body: 'Fallo simulado de subida de foto (T014)' })
+    )
+
+    await page.goto(`/admin/conductores/${conductorId}/editar`)
+    await esperarHidratacion(page)
+    await page.getByTestId('foto-input').setInputFiles(fotoDePrueba('nueva.jpg'))
+    await page.getByTestId('submit-btn').click()
+
+    await page.waitForURL((url) => url.pathname === `/admin/conductores/${conductorId}`, {
+      timeout: 10_000
+    })
+
+    const { data: conductor } = await admin
+      .from('conductores')
+      .select('foto_archivo_id')
+      .eq('id', conductorId)
+      .single()
+    expect(conductor!.foto_archivo_id).toBe(v1.id)
+
+    const { data: archivoV1Aun } = await admin
+      .from('archivos')
+      .select('id')
+      .eq('id', v1.id)
+      .maybeSingle()
+    expect(archivoV1Aun).not.toBeNull()
   })
 })

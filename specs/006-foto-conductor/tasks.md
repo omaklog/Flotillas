@@ -259,3 +259,39 @@ Task: "Playwright: si la subida de un reemplazo falla, la foto anterior sigue vi
 - Verificar que los tests fallan antes de implementar.
 - Commit después de cada tarea o grupo lógico.
 - Parar en el checkpoint para validar la feature de forma independiente antes de Polish.
+
+---
+
+## Phase 5: Convergence
+
+**Purpose**: Brechas encontradas por `/speckit-converge` entre spec.md/plan.md/tasks.md y el
+estado real del código, tras completar la Fase 4. Ver el reporte de la corrida para el detalle
+completo de severidad/evidencia.
+
+- [X] T024 Agregar un test Playwright negativo dedicado para la rama `foto_conductor` de las
+      políticas de `storage.objects` (un operario SIN `'editar'` en `conductores` no puede subir a
+      `foto_conductor/...`), usando un usuario/empresa aislados (no el `operario-e2e` compartido)
+      para evitar la condición de carrera entre proyectos de Playwright que obligó a quitar el
+      pre-chequeo equivalente de T019, en `tests/e2e/rls.spec.ts` per FR-007 / Constitución §4 (partial)
+      **Estado**: hecho. Operario aislado creado vía `admin.auth.admin.createUser()` +
+      `usuarios.insert()` (mismo patrón que `global-setup.ts`), sin más permisos que los defaults
+      del trigger `otorgar_permisos_default_operario`. 4/4 en verde (admin/operario/superusuario/
+      anonimo).
+- [X] T025 Corregir/agregar un test que visite el detalle de solo lectura
+      (`/admin/conductores/{id}`) de un conductor sin `foto_archivo_id` y confirme que
+      `foto-conductor-vacia` es visible — la aserción actual de T010 corre sobre
+      `/admin/conductores/{id}/editar`, página que no tiene ese `data-testid`, así que nunca
+      verifica nada, en `tests/e2e/conductores.spec.ts` per FR-006 (partial)
+      **Estado**: hecho. T010 ahora visita el detalle antes de editar, confirma
+      `foto-conductor-vacia` visible y `foto-conductor` ausente, y solo después navega a editar y
+      sube la foto.
+- [X] T026 Agregar una aserción sobre Storage (no solo la fila de `archivos`) en el test de
+      reemplazo de foto, confirmando que el objeto anterior ya no existe en el bucket `documentos`
+      (p. ej. `admin.storage.from('documentos').list(...)` sobre la ruta anterior devuelve vacío),
+      en `tests/e2e/conductores.spec.ts` (test T011) per SC-002 (partial)
+      **Estado**: hecho. `admin.storage.from('documentos').list(carpeta)` tras el reemplazo
+      confirma que `seed-v1.jpg` ya no aparece en el listado.
+
+**Verificación de Phase 5**: `yarn typecheck`/`yarn lint` en verde. Los 3 tests nuevos/corregidos
+(T024/T025/T026) más los 6 tests de US1 y los otros 2 de RLS de Foto del Conductor corridos juntos
+en los 4 proyectos de Playwright: 36/36 en verde, sin flakes.

@@ -937,9 +937,16 @@ test.describe('Foto del Conductor (FR-001 a FR-007)', () => {
   }) => {
     const { conductorId } = await sembrarConductor('T010')
 
+    // Convergence T025 (FR-006): el estado vacío vive en el detalle de solo lectura, no en el
+    // formulario de edición — la aserción original comprobaba el testid en la página equivocada
+    // (`/editar` nunca lo renderiza), así que siempre pasaba sin verificar nada.
+    await page.goto(`/admin/conductores/${conductorId}`)
+    await esperarHidratacion(page)
+    await expect(page.getByTestId('foto-conductor-vacia')).toBeVisible()
+    await expect(page.getByTestId('foto-conductor')).toHaveCount(0)
+
     await page.goto(`/admin/conductores/${conductorId}/editar`)
     await esperarHidratacion(page)
-    await expect(page.getByTestId('foto-conductor-vacia')).toHaveCount(0)
     await page.getByTestId('foto-input').setInputFiles(fotoDePrueba())
     await page.getByTestId('submit-btn').click()
 
@@ -987,6 +994,13 @@ test.describe('Foto del Conductor (FR-001 a FR-007)', () => {
       .eq('id', v1.id)
       .maybeSingle()
     expect(archivoV1Aun).toBeNull()
+
+    // Convergence T026 (SC-002 "sin objetos huérfanos en Storage"): la fila de `archivos` ya se
+    // confirma arriba, pero eso no prueba que el objeto en Storage también se haya borrado —
+    // `remove()` puede fallar en silencio sin que el resto del flujo lo note.
+    const carpeta = `foto_conductor/${empresaId}/${conductorId}`
+    const { data: objetosRestantes } = await admin.storage.from('documentos').list(carpeta)
+    expect((objetosRestantes ?? []).map((o) => o.name)).not.toContain('seed-v1.jpg')
   })
 
   test('T012: un archivo de foto con tipo o tamaño inválido se rechaza antes de subirse', async ({

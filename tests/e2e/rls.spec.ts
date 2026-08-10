@@ -957,4 +957,65 @@ test.describe('RLS — casos negativos (constitución §4)', () => {
       .list(`foto_conductor/${empresaAjenaId}/${conductorAjeno!.id}`)
     expect(listado ?? []).toEqual([])
   })
+
+  // T024 (006-foto-conductor, Convergence, FR-007 / constitución §4): caso negativo dedicado
+  // para la rama foto_conductor — el pre-chequeo equivalente se quitó de T019 porque competía
+  // contra los otros 3 proyectos de Playwright otorgando/revocando permisos sobre el mismo
+  // `operario-e2e` compartido. Aquí se crea un operario AISLADO (usuario propio, sin ningún
+  // usuario_permisos otorgado más allá de los defaults del trigger
+  // otorgar_permisos_default_operario) para que el negativo no dependa de estado compartido.
+  test('documentos (foto_conductor): un operario recién creado sin "editar" en conductores no puede subir la foto de un conductor (FR-007)', async () => {
+    const admin = adminSupabaseClient()
+    const { data: perfilAdmin } = await admin
+      .from('usuarios')
+      .select('empresa_id')
+      .eq('correo', 'admin-e2e@flotillas.local')
+      .single()
+    const empresaId = perfilAdmin!.empresa_id!
+
+    const sufijo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const correoOperarioAislado = `operario-rls-t024-${sufijo}@flotillas.local`
+    const { data: authOperario, error: errAuth } = await admin.auth.admin.createUser({
+      email: correoOperarioAislado,
+      password: PASSWORD_PRUEBAS,
+      email_confirm: true
+    })
+    if (errAuth) throw errAuth
+    await admin.from('usuarios').insert({
+      auth_user_id: authOperario!.user.id,
+      empresa_id: empresaId,
+      nombre: 'Operario RLS T024',
+      correo: correoOperarioAislado,
+      rol: 'operario',
+      activo: true
+    })
+
+    const { data: conductor } = await admin
+      .from('conductores')
+      .insert({
+        empresa_id: empresaId,
+        nombre: 'Conductor RLS T024',
+        apellidos: 'X',
+        numero_licencia: `RLS-T024-${sufijo}`,
+        tipo_licencia: 'federal',
+        fecha_vencimiento_licencia: '2030-01-01'
+      })
+      .select('id')
+      .single()
+
+    const operarioAislado = await clienteAutenticado(correoOperarioAislado)
+
+    // Negativo: el operario recién creado solo tiene 'ver' por defecto (sin 'editar' en
+    // conductores) — bloqueado.
+    const { error: errSubida } = await operarioAislado.storage
+      .from('documentos')
+      .upload(
+        `foto_conductor/${empresaId}/${conductor!.id}/intento-sin-permiso.jpg`,
+        Buffer.from('foto de prueba'),
+        { contentType: 'image/jpeg' }
+      )
+    expect(errSubida).not.toBeNull()
+
+    await admin.auth.admin.deleteUser(authOperario!.user.id)
+  })
 })

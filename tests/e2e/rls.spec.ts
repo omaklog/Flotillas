@@ -839,11 +839,12 @@ test.describe('RLS — casos negativos (constitución §4)', () => {
       .eq('accion', 'editar')
   })
 
-  // T019 (006-foto-conductor, FR-007, SC-003): caso positivo — constitución §2 "no basta con
-  // probar el camino permitido". Un operario con 'editar' otorgado ÚNICAMENTE en 'conductores'
-  // (sin 'vehiculos') debe poder subir a documentos/foto_conductor/..., mismo permiso que ya le
-  // alcanza para la licencia (research.md R2 de 006-foto-conductor). El caso negativo (operario
-  // sin ese permiso, bloqueado) ya lo cubre el test de arriba "conductores: un operario con solo
+  // T019 (004-conductores, actualización posterior "Foto del Conductor", FR-007, SC-003): caso
+  // positivo — constitución §2 "no basta con probar el camino permitido". Un operario con
+  // 'editar' otorgado ÚNICAMENTE en 'conductores' (sin 'vehiculos') debe poder subir a
+  // documentos/foto_conductor/..., mismo permiso que ya le alcanza para la licencia (research.md
+  // R11 de specs/004-conductores/). El caso negativo (operario sin ese permiso, bloqueado) ya lo
+  // cubre el test de arriba "conductores: un operario con solo
   // 'ver'..." sobre el segmento `licencia` — la cláusula de RLS de `foto_conductor` es
   // estructuralmente idéntica (mismo `tiene_permiso('conductores','editar')`). No se repite aquí
   // como pre-chequeo porque esta suite corre en paralelo en 4 proyectos de Playwright
@@ -904,9 +905,10 @@ test.describe('RLS — casos negativos (constitución §4)', () => {
       .eq('accion', 'editar')
   })
 
-  // T020 (006-foto-conductor): aislamiento del bucket `documentos` por empresa para archivos de
-  // foto_conductor — mismo criterio que el test de `licencia` arriba, ejercitando el segmento
-  // foto_conductor de la política generalizada (research.md R2 de 006-foto-conductor).
+  // T020 (004-conductores, actualización posterior "Foto del Conductor"): aislamiento del bucket
+  // `documentos` por empresa para archivos de foto_conductor — mismo criterio que el test de
+  // `licencia` arriba, ejercitando el segmento foto_conductor de la política generalizada
+  // (research.md R11 de specs/004-conductores/).
   test('documentos (foto_conductor): un administrador de una empresa no puede generar una URL firmada válida ni listar la carpeta de foto de un conductor de otra empresa', async ({
     request
   }) => {
@@ -958,7 +960,8 @@ test.describe('RLS — casos negativos (constitución §4)', () => {
     expect(listado ?? []).toEqual([])
   })
 
-  // T024 (006-foto-conductor, Convergence, FR-007 / constitución §4): caso negativo dedicado
+  // T024 (004-conductores, actualización posterior "Foto del Conductor", Convergence, FR-007 /
+  // constitución §4): caso negativo dedicado
   // para la rama foto_conductor — el pre-chequeo equivalente se quitó de T019 porque competía
   // contra los otros 3 proyectos de Playwright otorgando/revocando permisos sobre el mismo
   // `operario-e2e` compartido. Aquí se crea un operario AISLADO (usuario propio, sin ningún

@@ -99,6 +99,21 @@ para eso está `tasks.md` (siguiente comando: `/speckit-tasks`).
    generalización de las políticas de `storage.objects` (research.md R4) sigue aislando cada tipo
    de documento a su propio módulo, sin sobre-conceder acceso cruzado.
 
+## Escenario 8 — Foto del conductor: alta, reemplazo, y aislamiento por módulo (actualización posterior 2026-08-10)
+
+1. Como administrador, dar de alta un conductor adjuntando también una foto (JPG o PNG, <10 MB).
+2. **Esperado**: el conductor se crea con la foto visible en su detalle (tarjeta izquierda, junto
+   al nombre y el chip de tipo de licencia — ver referencia
+   `docs/design-references/screens/detalle-conductor-datos-generales.png`).
+3. Editar ese conductor y adjuntar una foto distinta.
+4. **Esperado**: la nueva foto se muestra; confirmar vía `service_role` que la fila anterior en
+   `archivos` (`tipo='foto_conductor'`) y su objeto en Storage ya no existen — sin historial, a
+   diferencia de la licencia.
+5. Iniciar sesión como un operario con `'editar'` otorgado únicamente en el módulo `conductores`
+   (sin `'vehiculos'`) y adjuntar/reemplazar la foto de un conductor.
+6. **Esperado**: la operación se completa sin ningún rechazo de RLS — el mismo permiso que ya le
+   permite editar los datos y la licencia del conductor alcanza también para su foto.
+
 ## Notas de validación no funcional
 
 - **Auditoría** (constitución §2): tras cada alta/edición/desactivación/reactivación/eliminación,
@@ -108,6 +123,8 @@ para eso está `tasks.md` (siguiente comando: `/speckit-tasks`).
 - **Aislamiento de Storage** (FR-017, SC-007): con dos empresas de prueba, confirmar que un
   administrador de la empresa A no puede generar una URL firmada válida para un archivo de
   licencia de la empresa B, ni listar su carpeta.
+- **Aislamiento de Storage para la foto** (FR-026, SC-010, actualización posterior 2026-08-10):
+  mismo criterio que la licencia, sobre `documentos/foto_conductor/{empresa}/...`.
 - **Accesibilidad** (constitución §4): el formulario de alta/edición (incluida la zona de subida
   de archivo) y el listado deben cumplir WCAG 2.1 AA — mismo criterio ya aplicado en Vehículos y
   Catálogos Base.

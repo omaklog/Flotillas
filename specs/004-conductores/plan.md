@@ -164,3 +164,11 @@ commit. No se reutiliza `useVehiculos.ts` ni `useCatalogo.ts` (research.md R9); 
 ## Complexity Tracking
 
 *Sin violaciones al Constitution Check — tabla no aplica.*
+
+## Actualización posterior (2026-08-10): Foto del Conductor
+
+Planeada originalmente como Feature 006 independiente, doblada aquí (ver spec.md/research.md/
+data-model.md para el detalle). Sin cambios de Project Structure más allá de: 1 migración nueva
+(`20260810154825_conductores_foto.sql`), y modificaciones a `FormularioConductor.vue`,
+`useConductores.ts`, `nuevo.vue`, `[id]/editar.vue`, `[id]/index.vue` — mismos archivos ya
+listados arriba, sin páginas ni componentes nuevos.

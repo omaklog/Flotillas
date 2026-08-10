@@ -83,7 +83,30 @@ Editar).
 ## Composable `useConductores.ts` — forma esperada (research.md R9)
 
 Mismo shape de funciones que `useVehiculos.ts`, sin compartir código entre ambos composables:
-`listar`, `crear`, `editar`, `adjuntarLicencia`, `desactivar`, `reactivar`, `eliminar`,
-`listarHistorialLicencia`, `descargarArchivo`, `verArchivo`. Mapeo de errores
+`listar`, `crear`, `editar`, `adjuntarLicencia`, `adjuntarFoto`, `desactivar`, `reactivar`,
+`eliminar`, `listarHistorialLicencia`, `descargarArchivo`, `verArchivo`. Mapeo de errores
 (`mapearErrorEscritura`): `23505` → "Ya existe un conductor con ese número de licencia.", `23503`
 sobre `asignaciones_conductor_vehiculo` → "No se puede eliminar: tiene asignaciones registradas."
+
+## Foto del conductor (alta paso 2 / reemplazo en edición — actualización posterior 2026-08-10, research.md R12)
+
+Calcado de `adjuntarFoto()` de `useVehiculos.ts` (contracts/vehiculos.md, sección "Foto del
+vehículo"), sobre `conductores` en vez de `vehiculos`. **A diferencia de la licencia, SIN
+historial** — la foto anterior se borra en el mismo reemplazo:
+
+1. Validar tipo (`image/jpeg`, `image/png`) y tamaño (≤10 MB) con `validarFoto()` de
+   `app/utils/archivos.ts` (reutilizada tal cual) **antes** de subir.
+2. Leer `conductores.foto_archivo_id` actual (si lo había) — se guarda para borrarlo después, *no*
+   antes.
+3. `supabase.storage.from('documentos').upload(`foto_conductor/${empresaId}/${conductorId}/${nombreArchivoUnico(archivo.name)}`, archivo, { contentType: archivo.type })`.
+4. `supabase.from('archivos').insert({ empresa_id, tipo: 'foto_conductor', storage_path, entidad_tipo: 'conductor', entidad_id: conductorId, subido_por: usuarioId }).select('id').single()`.
+5. `supabase.from('conductores').update({ foto_archivo_id: nuevoArchivoId }).eq('id', conductorId)`.
+6. **Solo si los pasos 3-5 tuvieron éxito** y ya había una foto anterior (capturada en el paso 2):
+   `supabase.from('archivos').delete().eq('id', fotoAnteriorId)` +
+   `supabase.storage.from('documentos').remove([rutaAnterior])` — en ese orden, para nunca perder
+   la foto vigente si algún paso intermedio falla.
+
+**Mostrar la foto vigente**: no hay historial que listar; si `conductores.foto_archivo_id` no es
+`null`, se resuelve una URL firmada igual que el resto de los archivos del proyecto
+(`descargarArchivo()`), usada como `src` de un `<v-img>` en el detalle de solo lectura del
+conductor.

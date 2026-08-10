@@ -396,3 +396,74 @@ rechaza con un mensaje claro.
   definición ya prediseñada en `docs/schema-reference/schema_06_asignaciones_conductor_vehiculo.sql`
   tal cual está, sin modificarla — esa definición no fue revisada ni cuestionada como parte de
   esta feature, solo se adopta para destrabar la prueba de punta a punta de US-6.
+
+## Actualización posterior (2026-08-10): Foto del Conductor
+
+**Origen**: esta actualización se especificó, planeó e implementó originalmente como Feature 006
+independiente ("Foto del Conductor"). Se dobló aquí, dentro de Conductores (004) — a lo que
+realmente extiende — el 2026-08-10 a pedido del usuario, para no dejar un hueco en la numeración
+secuencial de `specs/`; el número 006 queda libre para una futura feature de catálogos de
+Proveedores y Productos. El directorio `specs/006-foto-conductor/` fue eliminado tras este doblado;
+su implementación en código (migración, composable, componentes, tests) **no cambió** — solo se
+reubicó la documentación de planeación.
+
+**Resumen**: permite al administrador (u operario con permiso `editar` en `conductores`) adjuntar
+y reemplazar la fotografía de un conductor, visible en su detalle de solo lectura. Mismo patrón ya
+construido y validado para la foto del vehículo (Feature 003, US-3.7): opcional, JPG/PNG hasta
+10 MB, **sin historial** — cada reemplazo elimina la foto anterior (fila en `archivos` y objeto en
+Storage) en el mismo momento, a diferencia de la licencia (que sí conserva historial).
+
+**Decisión técnica propia (no una copia directa de Vehículos)**: la foto del conductor usa su
+propio valor de enum (`foto_conductor`, no reutiliza `foto`) y su propia carpeta de primer nivel
+en Storage (`documentos/foto_conductor/{empresa_id}/{conductor_id}/{archivo}`), enrutada al módulo
+`conductores` igual que la licencia. Reutilizar el valor `foto` habría enrutado el permiso
+requerido al módulo `vehiculos` (las políticas de `storage.objects` generalizadas por esta misma
+feature, sección 3 más abajo, leen el primer segmento de la ruta para decidir el módulo) — un
+operario con `editar` solo en `conductores` no habría podido subir la foto de "su propio"
+conductor. Ver `research.md` R11 para el detalle completo.
+
+**Referencia visual**: a diferencia del resto de Conductores (sin captura propia de Stitch, ver
+Assumptions arriba), esta actualización sí tiene una — `detalle-conductor-datos-generales.png`
+("Detalle de Conductor: Datos Generales", generada 2026-08-10, ver
+`docs/design-references/screens.md`). El detalle de solo lectura se reestructuró en 2 tarjetas
+lado a lado siguiendo ese mockup: una angosta a la izquierda con la foto como avatar grande (o
+ícono `mdi-account` en el estado vacío), el nombre completo debajo, y un chip con el tipo de
+licencia ("Conductor Federal"/"Conductor Local") debajo del nombre; y "Datos del conductor" — los
+campos que ya existían, sin cambios — como tarjeta ancha a la derecha. Distinto del patrón de
+Vehículos (foto embebida dentro de la misma tarjeta de datos), por seguir la referencia de Stitch
+específica de esta pantalla en vez de la consistencia entre módulos (`CLAUDE.md`).
+
+**Requisitos funcionales agregados**:
+
+- **FR-020**: El administrador (u operario con permiso `editar` en `conductores`) MUST poder
+  adjuntar una foto de un conductor (JPG o PNG, máximo 10 MB) de forma opcional, durante el alta o
+  después editando el registro.
+- **FR-021**: El sistema MUST rechazar archivos de foto que no sean JPG o PNG, o que excedan
+  10 MB, antes de intentar subirlos (mismo criterio que la licencia, FR-004).
+- **FR-022**: El administrador MUST poder reemplazar la foto de un conductor; a diferencia del
+  archivo de licencia (que conserva historial, FR-010), la foto anterior MUST eliminarse (registro
+  en `archivos` y objeto en Storage) en el mismo momento del reemplazo — sin historial de
+  versiones de foto.
+- **FR-023**: Si la subida de una foto nueva falla durante un reemplazo, la foto anterior MUST
+  seguir siendo la vigente — el borrado de la anterior solo ocurre después de que la nueva ya
+  quedó vinculada exitosamente.
+- **FR-024**: Si la subida de la foto falla durante el alta, el sistema MUST conservar el
+  conductor ya creado sin bloquear ni revertir el alta completa.
+- **FR-025**: El detalle de solo lectura de un conductor MUST mostrar su foto si tiene una
+  adjunta, o un estado vacío si no.
+- **FR-026**: Los archivos de foto de conductor MUST usar su propio valor de tipo de documento
+  (`foto_conductor`, distinto del `foto` ya usado por Vehículos) y quedar aislados bajo el permiso
+  del módulo `conductores`, no del módulo `vehiculos`.
+
+**Criterios de éxito agregados**:
+
+- **SC-008**: El 100% de las fotos de conductor adjuntadas correctamente son visibles en su
+  detalle de inmediato.
+- **SC-009**: El 100% de los reemplazos de foto exitosos dejan exactamente una foto vigente por
+  conductor, sin objetos huérfanos en Storage.
+- **SC-010**: Un operario con permiso de escritura otorgado únicamente en el módulo `conductores`
+  puede adjuntar o reemplazar una foto sin necesitar ningún permiso adicional en `vehiculos`.
+
+**Fuera de alcance de esta actualización**: mostrar la foto en el listado principal de conductores
+(solo en su detalle, mismo alcance que la foto del vehículo); recorte, edición o redimensionado de
+la imagen (se sube tal cual la proporciona el usuario).

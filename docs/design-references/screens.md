@@ -27,7 +27,7 @@ Sigue el mismo lenguaje visual descrito en `../design-system.md`.
 | Gestión de Vehículo: Alta y Edición | Vehículos (003, `admin/vehiculos/nuevo.vue` y `[id].vue`, pestaña de datos — referencia de patrón, no literal) | `screens/gestion-vehiculo-alta-edicion.png` | `fd9fb918cd9e4c8094c7153c47d8d4f5` |
 | Detalle de Vehículo: Datos Generales | Vehículos (003, `admin/vehiculos/[id].vue`) | `screens/detalle-vehiculo-datos-generales.png` | `94fd194837ed400598c50cbed163aab0` |
 | Detalle de Vehículo: Historial de Pólizas | Vehículos (003, `admin/vehiculos/[id]/index.vue`, pestaña "Historial de Póliza", `components/vehiculos/HistorialPoliza.vue`) | `screens/detalle-vehiculo-historial-polizas.png` | `70e72834d4ee4bd08560b2617249ff35` |
-| Detalle de Conductor: Datos Generales | Conductores / Foto del Conductor (006, `admin/conductores/[id]/index.vue`, pestaña "Datos") | `screens/detalle-conductor-datos-generales.png` | `d3847082278f4718b7436a7868767d58` |
+| Detalle de Conductor: Datos Generales | Conductores (004, `admin/conductores/[id]/index.vue`, pestaña "Datos" — actualización posterior "Foto del Conductor", 2026-08-10) | `screens/detalle-conductor-datos-generales.png` | `d3847082278f4718b7436a7868767d58` |
 
 Las 3 anteriores a estas 2 últimas se descargaron el 2026-08-07, vía el workaround de `curl`
 directo documentado en `../../CLAUDE.md` § "Design system compliance" (el MCP de Stitch tenía
@@ -95,14 +95,18 @@ existente, historial en tabla — sin generar un mockup nuevo (research.md R8 de
 `specs/005-asignacion-conductor-vehiculo/`).
 
 **`detalle-conductor-datos-generales.png`** se generó y descargó el 2026-08-10, directo en la UI
-de Stitch por el usuario, para Feature 006 (Foto del Conductor) — la primera captura propia de
-Conductores (004 y 005 no tienen una, ver nota arriba). A diferencia del patrón ya usado en
-Vehículos (foto embebida como bloque 240×180 dentro de la tarjeta de datos/identificación), este
-mockup separa la pestaña "Datos" en 2 tarjetas: una angosta a la izquierda con la foto como avatar
-grande, el nombre completo debajo, y un chip de tipo de licencia ("Conductor Federal"/"Conductor
-Local") debajo del nombre; y "Datos del conductor" como tarjeta ancha a la derecha, sin cambios
-sobre los campos que ya existían. Se sigue tal cual (research.md R4 de `specs/006-foto-conductor/`)
-en vez de reutilizar el patrón de Vehículos, porque `CLAUDE.md` prioriza la referencia de Stitch
-específica de la pantalla sobre la consistencia entre módulos cuando ambas están disponibles.
+de Stitch por el usuario, para la actualización posterior "Foto del Conductor" sobre Conductores
+(004) — especificada e implementada originalmente como Feature 006 independiente, doblada dentro
+de 004 el mismo día para no dejar un hueco en la numeración secuencial (ver
+`specs/004-conductores/spec.md`, sección "Actualización posterior") — la primera captura propia de
+Conductores (004 y Asignación Conductor-Vehículo, 005, no tenían una, ver nota arriba). A
+diferencia del patrón ya usado en Vehículos (foto embebida como bloque 240×180 dentro de la
+tarjeta de datos/identificación), este mockup separa la pestaña "Datos" en 2 tarjetas: una angosta
+a la izquierda con la foto como avatar grande, el nombre completo debajo, y un chip de tipo de
+licencia ("Conductor Federal"/"Conductor Local") debajo del nombre; y "Datos del conductor" como
+tarjeta ancha a la derecha, sin cambios sobre los campos que ya existían. Se sigue tal cual
+(research.md R12 de `specs/004-conductores/`) en vez de reutilizar el patrón de Vehículos, porque
+`CLAUDE.md` prioriza la referencia de Stitch específica de la pantalla sobre la consistencia entre
+módulos cuando ambas están disponibles.
 
 Proyecto de origen en Stitch: `projects/4499192746969655413` ("FleetControl Enterprise").

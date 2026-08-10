@@ -67,9 +67,10 @@
 
       <v-window v-model="tabActiva">
         <!-- 2 tarjetas lado a lado siguiendo detalle-conductor-datos-generales.png
-        (research.md R4 de specs/006-foto-conductor/): a diferencia de Vehículos (foto embebida
-        dentro de la tarjeta de datos), esta referencia separa la foto en su propia tarjeta
-        angosta con nombre y chip de tipo de licencia debajo. -->
+        (research.md R12 de specs/004-conductores/, actualización posterior "Foto del
+        Conductor"): a diferencia de Vehículos (foto embebida dentro de la tarjeta de datos),
+        esta referencia separa la foto en su propia tarjeta angosta con nombre y chip de tipo de
+        licencia debajo. -->
         <v-window-item value="datos" data-testid="datos-conductor">
           <v-row>
             <v-col cols="12" md="4">

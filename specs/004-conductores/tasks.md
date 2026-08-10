@@ -515,3 +515,50 @@ reales (no verificación manual).
   adjuntar archivo, labels de Vuetify en todos los campos) — reforzado por el hecho de que
   `getByLabel()` funciona en todos los tests, evidencia directa de asociación label/campo
   correcta.
+
+---
+
+## Phase 10: Foto del Conductor (actualización posterior, 2026-08-10)
+
+**Origen**: especificada, planeada e implementada originalmente como Feature 006 independiente
+("Foto del Conductor"); doblada aquí el 2026-08-10 a pedido del usuario para no dejar un hueco en
+la numeración secuencial — ver spec.md "Actualización posterior" y research.md R11/R12 para el
+detalle completo de decisiones. Lista condensada (no 1:1 con la numeración T001-T026 original de
+Feature 006) — todas las tareas ya están completas e implementadas en producción local; esta fase
+existe para trazabilidad, no como plan pendiente de ejecutar.
+
+- [X] T050 Referencia de Stitch: `detalle-conductor-datos-generales.png` descargada y registrada
+      en `docs/design-references/screens.md` (research.md R12)
+- [X] T051 Migración `20260810154825_conductores_foto.sql`: `alter type tipo_archivo add value
+      'foto_conductor'` (en su propia sentencia) + `conductores.foto_archivo_id` + regeneración de
+      las 4 políticas de `storage.objects` con la rama `foto_conductor` → `conductores`
+      (research.md R11, data-model.md)
+- [X] T052 [P] Migración aplicada en local y verificada; `app/types/database.types.ts`
+      regenerado (`supabase gen types typescript --local > ...`, sin `2>&1`)
+- [X] T053 `adjuntarFoto(conductorId, archivo)` en `app/composables/useConductores.ts` — calcado
+      de `adjuntarFoto()` de `useVehiculos.ts`, sin historial (contracts/conductores.md)
+- [X] T054 [P] 6 tests Playwright (alta con foto, adjuntar editando, reemplazar sin historial,
+      archivo inválido rechazado, fallo de subida en alta, fallo de subida en reemplazo) en
+      `tests/e2e/conductores.spec.ts`, describe `Foto del Conductor (FR-001 a FR-007)`
+- [X] T055 Dropzone de foto en `app/components/conductores/FormularioConductor.vue` (mismo
+      marcado accesible que `FormularioVehiculo.vue`, `data-testid="foto-input"`)
+- [X] T056 `adjuntarFoto` conectado (best-effort, silencioso en fallo) en
+      `app/pages/admin/conductores/nuevo.vue` y `app/pages/admin/conductores/[id]/editar.vue`
+- [X] T057 Detalle de solo lectura (`app/pages/admin/conductores/[id]/index.vue`) reestructurado
+      en 2 tarjetas siguiendo la referencia de Stitch (T050) — avatar + nombre + chip de tipo de
+      licencia a la izquierda, "Datos del conductor" sin cambios a la derecha
+- [X] T058 RLS: test positivo (operario con `editar` solo en `conductores` puede subir a
+      `foto_conductor/...`) + test negativo dedicado (operario aislado, sin ese permiso, bloqueado
+      — usuario propio para evitar competir por estado compartido con `operario-e2e` entre
+      proyectos de Playwright en paralelo) + aislamiento de Storage cross-empresa, los 3 en
+      `tests/e2e/rls.spec.ts`
+- [X] T059 Accesibilidad (mismo marcado ya validado, sin cambios necesarios) + `quickstart.md`
+      (Escenario 8 arriba) + `yarn typecheck`/`yarn lint` en verde
+- [X] T060 Convergencia (`/speckit-converge` sobre la extinta 006): fix de una aserción vacía en
+      el test del estado sin foto (corría sobre la página equivocada, nunca verificaba nada) +
+      aserción de Storage (no solo la fila de `archivos`) agregada al test de reemplazo
+
+**Verificación de Phase 10**: 36/36 en los 4 proyectos de Playwright (admin/operario/superusuario/
+anonimo) sobre los tests de Foto del Conductor (US1 + RLS), sin flakes. `yarn typecheck`/`yarn
+lint` en verde. Detalle completo de hallazgos y fixes en el historial de commits `60ac60f` y
+`2b46683` (antes de este doblado de documentación).

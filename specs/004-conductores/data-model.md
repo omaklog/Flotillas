@@ -24,6 +24,7 @@ Vehículos) sigue el mismo aislamiento vía la ruta de sus objetos.
 | `tipo_licencia` | enum `tipo_licencia` (`federal`\|`local`) | |
 | `fecha_vencimiento_licencia` | date, not null | usado para el badge vigente/por vencer/vencida (FR-008), mismo umbral de 60 días que Vehículos |
 | `licencia_archivo_id` | uuid, nullable, FK → `archivos.id` | apunta a la versión vigente; `null` si nunca se adjuntó una |
+| `foto_archivo_id` | uuid, nullable, FK → `archivos.id` | **agregada en la actualización posterior "Foto del Conductor" (2026-08-10)** — apunta a la foto vigente; `null` si nunca se adjuntó una; sin historial (a diferencia de `licencia_archivo_id`) |
 | `activo` | boolean, not null, default `true` | semántica NO invertida (a diferencia de `vehiculos.baja`) — mismo criterio que `empresas`/`usuarios` |
 | `motivo_baja` | text, check `char_length <= 150` | **nueva columna de esta feature** (research.md R2) — obligatorio al desactivar (FR-012); se conserva al reactivar |
 | `created_at`, `updated_at` | timestamptz | trigger `set_updated_at` ya existe |
@@ -77,6 +78,27 @@ también `tiene_permiso('conductores','editar')`, además de `tiene_permiso('veh
 (ya agregado por Vehículos) y `rol = 'admin'`. No existe política de `UPDATE`: los archivos nunca
 se editan, solo se crean nuevas versiones.
 
+## Foto del conductor (`public.archivos`, `tipo = 'foto_conductor'`, `entidad_tipo = 'conductor'`)
+
+**Agregada en la actualización posterior "Foto del Conductor" (2026-08-10, ver spec.md,
+research.md R11)**. Misma tabla `archivos` que ya usan Vehículos (`tipo = 'poliza'|'foto'`) y la
+licencia de esta feature (`tipo = 'licencia'`) — sin columnas nuevas en `archivos`.
+
+| Campo | Tipo | Notas |
+|---|---|---|
+| `tipo` | enum `tipo_archivo` | **nuevo valor `foto_conductor`** — `alter type ... add value`, en su propia transacción, sin insertar en la misma migración una fila que use el valor nuevo (mismo bloqueo de Postgres que Vehículos ya resolvió al agregar `'foto'`) |
+| `storage_path` | text, not null | `foto_conductor/{empresa_id}/{conductor_id}/{archivo}` |
+| `entidad_tipo` | text, not null | siempre `'conductor'` |
+| `entidad_id` | uuid, not null | id del conductor — misma columna polimórfica genérica |
+
+**"Vigente" no es un campo de esta tabla**: se deriva de `conductores.foto_archivo_id =
+archivos.id`, mismo criterio que la licencia.
+
+**Sin historial**: a diferencia de la licencia, la aplicación garantiza que solo exista una fila
+`tipo='foto_conductor'` "viva" por conductor a la vez — cada reemplazo borra la fila anterior (y
+su objeto en Storage) *después* de que la nueva ya quedó vinculada exitosamente, nunca antes
+(mismo edge case que la foto del vehículo, Feature 003).
+
 ## Asignación de conductor a vehículo (`public.asignaciones_conductor_vehiculo`)
 
 **Nueva en esta feature** (Clarifications, sesión 2026-08-09 — research.md R6): se crea la tabla
@@ -127,6 +149,11 @@ select/insert/update/delete condicionados a `(storage.foldername(name))[2] = emp
 segmento, sin cambio) **y** al permiso correspondiente según el primer segmento (`{tipo}`):
 `tiene_permiso('vehiculos', 'ver'|'editar')` si es `poliza`/`foto`, `tiene_permiso('conductores',
 'ver'|'editar')` si es `licencia` — o `rol='admin'`/`es_superusuario()` en cualquier caso.
+**Actualizado en la actualización posterior "Foto del Conductor"** (2026-08-10,
+`20260810154825_conductores_foto.sql`, research.md R11): se agrega un tercer segmento,
+`foto_conductor` → también `tiene_permiso('conductores', 'ver'|'editar')` — necesario porque
+reutilizar el segmento `foto` habría enrutado el permiso al módulo `vehiculos` en vez de
+`conductores` (ver Decisión Confirmada en spec.md).
 
 ## Extensiones sobre el esquema actual (resumen para `/speckit-tasks`)
 
@@ -147,3 +174,12 @@ Una sola migración nueva de esta feature debe agregar, sobre lo ya aplicado:
 No se modifican columnas existentes de `conductores` más allá de lo listado en (1), ni la RLS de
 esa tabla, ni los módulos/acciones ya sembrados — todo lo demás para esta feature ya está en
 producción local desde Feature 001.
+
+**Actualización posterior "Foto del Conductor" (2026-08-10, `20260810154825_conductores_foto.sql`,
+research.md R11)**: agregó, sobre lo anterior:
+
+6. `alter type public.tipo_archivo add value 'foto_conductor'` — en su propia sentencia.
+7. `alter table public.conductores add column foto_archivo_id uuid references public.archivos(id)`.
+8. `drop`/`create` de las 4 políticas de `storage.objects` otra vez, agregando la rama
+   `foto_conductor` → `conductores` (research.md R11) — sin tocar las ramas `poliza`/`foto` ni
+   `licencia` ya existentes.

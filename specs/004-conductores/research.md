@@ -218,3 +218,66 @@ cuando no hay mockup pixel-a-pixel disponible.
 rechazado; a diferencia de una decisión de color/espaciado puntual, aquí sí existe un patrón de
 pantalla completo ya construido y aprobado en el propio proyecto que sirve como referencia
 suficientemente específica.
+
+---
+
+## Actualización posterior (2026-08-10): Foto del Conductor
+
+Especificada, planeada e implementada originalmente como Feature 006 independiente; doblada aquí
+el 2026-08-10 a pedido del usuario (ver spec.md, "Actualización posterior"). R11 y R12 cubren las
+únicas 2 decisiones técnicas propias de esa actualización — el resto es aplicación directa de
+patrones ya cubiertos por R1-R10 arriba.
+
+## R11 — Nuevo valor de enum `foto_conductor`, y su propio segmento en las políticas de `storage.objects`
+
+**Decision**: se agrega `foto_archivo_id uuid references public.archivos(id)` a `conductores`
+(nullable, mismo criterio que `vehiculos.foto_archivo_id`). `alter type tipo_archivo add value
+'foto_conductor'` (mismo mecanismo que Vehículos usó para `'foto'` — en su propia transacción,
+sin insertar filas que usen el valor nuevo en la misma migración). Las 4 políticas de
+`storage.objects` del bucket `documentos` (ya generalizadas por R4 de esta misma feature) se
+reemplazan de nuevo (drop + create) agregando un tercer segmento:
+`(storage.foldername(name))[1] = 'foto_conductor'` → `tiene_permiso('conductores', 'ver'|'editar')`,
+además de las dos ramas ya existentes (`poliza`/`foto` → `vehiculos`, `licencia` → `conductores`).
+
+**Rationale**: reutilizar el valor `foto` (y por lo tanto la misma carpeta de primer nivel) habría
+enrutado el permiso requerido al módulo `vehiculos` en vez de `conductores` — un operario con
+`editar` solo en `conductores` no habría podido subir la foto de un conductor, aunque ese mismo
+permiso ya le alcanza para todo lo demás del conductor (datos, licencia). Un valor de enum y un
+segmento de ruta propios mantienen la regla ya establecida por R4: cada tipo de documento atado a
+un solo módulo.
+
+**Alternatives considered**: agregar `'foto_conductor'` a la lista de la rama `conductores` ya
+existente sin cambiar el nombre de la carpeta (dejar el archivo bajo `foto/...` pero con
+`tipo='foto_conductor'` en la fila de `archivos`) — rechazado: la política de `storage.objects`
+solo puede leer el *nombre del objeto* (la ruta), no el `tipo` de la fila de `archivos`
+correspondiente; el segmento de carpeta es la única señal disponible para esa política, así que
+debe ser distinto.
+
+## R12 — UI: dropzone con el mismo marcado ya validado, detalle según referencia de Stitch propia
+
+**Decision**: `FormularioConductor.vue` agrega una zona de adjuntar foto idéntica en estructura a
+la de `FormularioVehiculo.vue` (`role="button"`, `tabindex="0"`, input oculto,
+`data-testid="foto-input"`, validación vía `validarFoto()` — ya genérica, reutilizada tal cual sin
+duplicar lógica). `useConductores.ts` agrega su propio `adjuntarFoto(conductorId, archivo)`,
+calcado del de `useVehiculos.ts`: sube el archivo, inserta la fila de `archivos`
+(`tipo='foto_conductor'`), actualiza `conductores.foto_archivo_id`, y solo *después* de que eso
+tuvo éxito borra la foto anterior (si había) — nunca al revés, para no perder la vigente si un
+paso intermedio falla.
+
+Para el detalle de solo lectura (`[id]/index.vue`), a diferencia del resto de Conductores (R10, sin
+captura propia), esta actualización sí tiene una referencia de Stitch propia:
+`docs/design-references/screens/detalle-conductor-datos-generales.png` ("Detalle de Conductor:
+Datos Generales", 2026-08-10). A diferencia de Vehículos (foto embebida como bloque 240×180 dentro
+de la tarjeta de datos), el mockup separa la pestaña "Datos" en 2 tarjetas: una angosta a la
+izquierda con la foto como avatar grande, el nombre completo debajo, y un chip de tipo de
+licencia debajo del nombre; y "Datos del conductor" como tarjeta ancha a la derecha, sin cambios
+sobre los campos que ya existían.
+
+**Rationale**: `CLAUDE.md` exige seguir la referencia de Stitch en vez de inventar el layout una
+vez que existe una captura para la pantalla específica — prioriza esa referencia sobre la
+consistencia entre módulos (R10) cuando ambas están disponibles. `useConductores.ts` no comparte
+código con `useVehiculos.ts` (mismo criterio ya aplicado por R9) — el patrón se replica, el código
+no.
+
+**Alternatives considered**: mantener el patrón de Vehículos (foto embebida en la misma tarjeta
+que los datos) por consistencia entre módulos — rechazado por la razón de Rationale arriba.

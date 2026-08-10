@@ -878,6 +878,7 @@ export type Database = {
       }
       proveedores: {
         Row: {
+          activo: boolean
           calle: string | null
           celular: string | null
           colonia: string | null
@@ -885,6 +886,7 @@ export type Database = {
           created_at: string
           empresa_id: string
           id: string
+          motivo_baja: string | null
           nombre: string
           numero: string | null
           rfc: string | null
@@ -893,6 +895,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          activo?: boolean
           calle?: string | null
           celular?: string | null
           colonia?: string | null
@@ -900,6 +903,7 @@ export type Database = {
           created_at?: string
           empresa_id: string
           id?: string
+          motivo_baja?: string | null
           nombre: string
           numero?: string | null
           rfc?: string | null
@@ -908,6 +912,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          activo?: boolean
           calle?: string | null
           celular?: string | null
           colonia?: string | null
@@ -915,6 +920,7 @@ export type Database = {
           created_at?: string
           empresa_id?: string
           id?: string
+          motivo_baja?: string | null
           nombre?: string
           numero?: string | null
           rfc?: string | null

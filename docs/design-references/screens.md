@@ -109,4 +109,12 @@ tarjeta ancha a la derecha, sin cambios sobre los campos que ya existían. Se si
 `CLAUDE.md` prioriza la referencia de Stitch específica de la pantalla sobre la consistencia entre
 módulos cuando ambas están disponibles.
 
+**Feature 006 — Catálogos Base II (Proveedores + Productos)**: no tiene captura propia de Stitch.
+Reutiliza deliberadamente el patrón "modal en listado" ya construido y validado en Catálogos Base
+(002, `listado-flotilla.png`/`aseguradoras`/`tipos-vehiculo` — buscador + tabla + formulario en
+`v-dialog`, sin páginas de alta/edición/detalle separadas) para ambos catálogos, más el patrón de
+activo/inactivo con motivo obligatorio ya construido en Vehículos/Conductores (checkbox "Mostrar
+inactivos", chip "Inactivo", diálogo de motivo) para Proveedores — sin generar un mockup nuevo
+(research.md R3/R8 de `specs/006-catalogos-base-ii/`).
+
 Proyecto de origen en Stitch: `projects/4499192746969655413` ("FleetControl Enterprise").

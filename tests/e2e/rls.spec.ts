@@ -1021,4 +1021,160 @@ test.describe('RLS — casos negativos (constitución §4)', () => {
 
     await admin.auth.admin.deleteUser(authOperario!.user.id)
   })
+
+  // T030 (006-catalogos-base-ii, FR-011, SC-004): caso positivo Y negativo — constitución §2 "no
+  // basta con probar el camino permitido". Operario aislado (usuario propio, sin más permisos que
+  // los defaults del trigger otorgar_permisos_default_operario) para evitar la condición de
+  // carrera entre proyectos de Playwright sobre el `operario-e2e` compartido (mismo criterio que
+  // T024 de 006-foto-conductor).
+  test('proveedores: un operario sin "editar" no puede crear/editar/desactivar/eliminar; con el permiso otorgado, sí puede', async () => {
+    const admin = adminSupabaseClient()
+    const { data: perfilAdmin } = await admin
+      .from('usuarios')
+      .select('empresa_id')
+      .eq('correo', 'admin-e2e@flotillas.local')
+      .single()
+    const empresaId = perfilAdmin!.empresa_id!
+
+    const sufijo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const correoOperarioAislado = `operario-rls-t030-${sufijo}@flotillas.local`
+    const { data: authOperario, error: errAuth } = await admin.auth.admin.createUser({
+      email: correoOperarioAislado,
+      password: PASSWORD_PRUEBAS,
+      email_confirm: true
+    })
+    if (errAuth) throw errAuth
+    const { data: perfilOperario } = await admin
+      .from('usuarios')
+      .insert({
+        auth_user_id: authOperario!.user.id,
+        empresa_id: empresaId,
+        nombre: 'Operario RLS T030',
+        correo: correoOperarioAislado,
+        rol: 'operario',
+        activo: true
+      })
+      .select('id')
+      .single()
+
+    const { data: proveedor } = await admin
+      .from('proveedores')
+      .insert({ empresa_id: empresaId, nombre: `Proveedor RLS T030 ${sufijo}` })
+      .select('id')
+      .single()
+
+    const operarioAislado = await clienteAutenticado(correoOperarioAislado)
+
+    // Negativo: solo 'ver' por defecto — bloqueado en crear/editar/desactivar/eliminar.
+    const { data: intentoCrear } = await operarioAislado
+      .from('proveedores')
+      .insert({ empresa_id: empresaId, nombre: 'Intento sin permiso' })
+      .select()
+    expect(intentoCrear).toBeNull()
+    const { data: intentoEditar } = await operarioAislado
+      .from('proveedores')
+      .update({ nombre: 'Hackeado' })
+      .eq('id', proveedor!.id)
+      .select()
+    expect(intentoEditar).toEqual([])
+    const { data: intentoEliminar } = await operarioAislado
+      .from('proveedores')
+      .delete()
+      .eq('id', proveedor!.id)
+      .select()
+    expect(intentoEliminar).toEqual([])
+
+    // Positivo: con 'editar' otorgado explícitamente, sí puede.
+    await admin.from('usuario_permisos').insert({
+      empresa_id: empresaId,
+      usuario_id: perfilOperario!.id,
+      modulo_clave: 'proveedores',
+      accion: 'editar',
+      otorgado_por: perfilOperario!.id
+    })
+    const { data: intentoConPermiso } = await operarioAislado
+      .from('proveedores')
+      .update({ activo: false, motivo_baja: 'con permiso' })
+      .eq('id', proveedor!.id)
+      .select()
+    expect(intentoConPermiso).not.toEqual([])
+
+    await admin.auth.admin.deleteUser(authOperario!.user.id)
+  })
+
+  // T031 (006-catalogos-base-ii, FR-011, SC-004): mismo patrón que T030 para productos.
+  test('productos: un operario sin "editar" no puede crear/editar/eliminar; con el permiso otorgado, sí puede', async () => {
+    const admin = adminSupabaseClient()
+    const { data: perfilAdmin } = await admin
+      .from('usuarios')
+      .select('empresa_id')
+      .eq('correo', 'admin-e2e@flotillas.local')
+      .single()
+    const empresaId = perfilAdmin!.empresa_id!
+
+    const sufijo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const correoOperarioAislado = `operario-rls-t031-${sufijo}@flotillas.local`
+    const { data: authOperario, error: errAuth } = await admin.auth.admin.createUser({
+      email: correoOperarioAislado,
+      password: PASSWORD_PRUEBAS,
+      email_confirm: true
+    })
+    if (errAuth) throw errAuth
+    const { data: perfilOperario } = await admin
+      .from('usuarios')
+      .insert({
+        auth_user_id: authOperario!.user.id,
+        empresa_id: empresaId,
+        nombre: 'Operario RLS T031',
+        correo: correoOperarioAislado,
+        rol: 'operario',
+        activo: true
+      })
+      .select('id')
+      .single()
+
+    const { data: producto } = await admin
+      .from('productos')
+      .insert({ empresa_id: empresaId, nombre: `Producto RLS T031 ${sufijo}`, tipo: 'refaccion' })
+      .select('id')
+      .single()
+
+    const operarioAislado = await clienteAutenticado(correoOperarioAislado)
+
+    // Negativo: solo 'ver' por defecto.
+    const { data: intentoCrear } = await operarioAislado
+      .from('productos')
+      .insert({ empresa_id: empresaId, nombre: 'Intento sin permiso', tipo: 'refaccion' })
+      .select()
+    expect(intentoCrear).toBeNull()
+    const { data: intentoEditar } = await operarioAislado
+      .from('productos')
+      .update({ nombre: 'Hackeado' })
+      .eq('id', producto!.id)
+      .select()
+    expect(intentoEditar).toEqual([])
+    const { data: intentoEliminar } = await operarioAislado
+      .from('productos')
+      .delete()
+      .eq('id', producto!.id)
+      .select()
+    expect(intentoEliminar).toEqual([])
+
+    // Positivo: con 'editar' otorgado explícitamente, sí puede.
+    await admin.from('usuario_permisos').insert({
+      empresa_id: empresaId,
+      usuario_id: perfilOperario!.id,
+      modulo_clave: 'productos',
+      accion: 'editar',
+      otorgado_por: perfilOperario!.id
+    })
+    const { data: intentoConPermiso } = await operarioAislado
+      .from('productos')
+      .update({ unidad: 'litro' })
+      .eq('id', producto!.id)
+      .select()
+    expect(intentoConPermiso).not.toEqual([])
+
+    await admin.auth.admin.deleteUser(authOperario!.user.id)
+  })
 })

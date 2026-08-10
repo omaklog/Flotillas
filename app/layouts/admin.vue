@@ -32,6 +32,16 @@
           prepend-icon="mdi-file-certificate-outline"
           title="Catálogo de Permisos"
         />
+        <v-list-item
+          to="/admin/proveedores"
+          prepend-icon="mdi-truck-delivery-outline"
+          title="Proveedores"
+        />
+        <v-list-item
+          to="/admin/productos"
+          prepend-icon="mdi-package-variant-closed"
+          title="Productos"
+        />
         <v-list-item to="/admin/configuracion" prepend-icon="mdi-cog" title="Configuración" />
       </v-list>
     </v-navigation-drawer>

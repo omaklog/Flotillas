@@ -8,33 +8,34 @@
 -- =====================================================================
 
 create table public.asignaciones_conductor_vehiculo (
-  id uuid primary key default gen_random_uuid(),
-  empresa_id uuid not null references public.empresas(id) on delete cascade,
-  vehiculo_id uuid not null references public.vehiculos(id),
-  conductor_id uuid not null references public.conductores(id),
-  fecha_inicio date not null default current_date,
-  fecha_fin date, -- null = asignación activa
-  asignado_por uuid not null references public.usuarios(id),
-  created_at timestamptz not null default now(),
-  check (fecha_fin is null or fecha_fin >= fecha_inicio)
+                                                        id uuid primary key default gen_random_uuid(),
+                                                        empresa_id uuid not null references public.empresas(id) on delete cascade,
+                                                        vehiculo_id uuid not null references public.vehiculos(id),
+                                                        conductor_id uuid not null references public.conductores(id),
+                                                        fecha_inicio date not null default current_date,
+                                                        fecha_fin date, -- null = asignación activa
+                                                        asignado_por uuid not null references public.usuarios(id),
+                                                        created_at timestamptz not null default now(),
+                                                        check (fecha_fin is null or fecha_fin >= fecha_inicio)
 );
 
 -- Un vehículo solo puede tener UNA asignación activa (fecha_fin is null) a la vez.
 -- Ningún equivalente para conductor_id: se permite que un conductor tenga varias
 -- asignaciones activas en paralelo, por diseño.
 create unique index uq_asignacion_vehiculo_activa
-  on public.asignaciones_conductor_vehiculo (vehiculo_id)
-  where fecha_fin is null;
+    on public.asignaciones_conductor_vehiculo (vehiculo_id)
+    where fecha_fin is null;
 
 alter table public.asignaciones_conductor_vehiculo enable row level security;
 
--- Mismo módulo de permisos que la gestión del vehículo (se asigna desde su detalle).
+-- Se puede asignar desde el detalle del vehículo O del conductor (Feature 005), así que se
+-- acepta permiso de lectura/escritura en cualquiera de los dos módulos.
 create policy "asignaciones_conductor_vehiculo_select" on public.asignaciones_conductor_vehiculo for select
-  using (private.es_superusuario() or (empresa_id = private.empresa_id() and (private.rol() = 'admin' or private.tiene_permiso('vehiculos','ver'))));
+                                                                                                         using (private.es_superusuario() or (empresa_id = private.empresa_id() and (private.rol() = 'admin' or private.tiene_permiso('vehiculos','ver') or private.tiene_permiso('conductores','ver'))));
 
 create policy "asignaciones_conductor_vehiculo_write" on public.asignaciones_conductor_vehiculo for all
-  using (private.es_superusuario() or (empresa_id = private.empresa_id() and (private.rol() = 'admin' or private.tiene_permiso('vehiculos','editar'))))
-  with check (private.es_superusuario() or (empresa_id = private.empresa_id() and (private.rol() = 'admin' or private.tiene_permiso('vehiculos','editar'))));
+  using (private.es_superusuario() or (empresa_id = private.empresa_id() and (private.rol() = 'admin' or private.tiene_permiso('vehiculos','editar') or private.tiene_permiso('conductores','editar'))))
+  with check (private.es_superusuario() or (empresa_id = private.empresa_id() and (private.rol() = 'admin' or private.tiene_permiso('vehiculos','editar') or private.tiene_permiso('conductores','editar'))));
 
 -- Índices: FKs (Postgres no las indexa solas) + patrón de consulta típico
 -- ("asignaciones activas/historial de este vehículo o de este conductor").

@@ -99,10 +99,15 @@ ahora. La UI de asignación (crear, listar, cerrar una asignación) es alcance e
 | `created_at` | timestamptz, not null, default `now()` | |
 | — | `unique index` parcial sobre `vehiculo_id` `where fecha_fin is null` | un vehículo solo puede tener una asignación activa a la vez; ningún equivalente para `conductor_id` (un conductor sí puede tener varias asignaciones activas en paralelo, por diseño de esa migración) |
 
-RLS (ya definida en la migración pre-diseñada, sin cambios de esta feature): `select`/`write`
-condicionados a `tiene_permiso('vehiculos', 'ver'|'editar')` (o admin/superusuario) — no
-`conductores`, porque esa migración ya decidió que la asignación se gestiona desde el detalle del
-*vehículo* (decisión que pertenece a Feature 005, no revisada ni cuestionada aquí).
+RLS: `select`/`write` condicionados a `tiene_permiso('vehiculos', 'ver'|'editar')` **o**
+`tiene_permiso('conductores', 'ver'|'editar')` (o admin/superusuario) — se puede asignar desde el
+detalle del *vehículo* o del *conductor* (decisión de Feature 005, no revisada ni cuestionada
+aquí). **Actualizado post-implementación** (`20260810004737_asignaciones_conductor_vehiculo_permiso_conductores.sql`):
+la versión original de esta feature solo aceptaba `vehiculos`, siguiendo la migración
+pre-diseñada tal como estaba en ese momento (`docs/schema-reference/schema_06_...sql`); el usuario
+amplió después ese archivo de referencia para aceptar también `conductores`, y se aplicó como
+ampliación de acceso (agrega un `OR`, no quita nada) — verificado funcionalmente que un usuario
+con solo `conductores`→`editar` (sin `vehiculos`→`editar`) ya puede escribir en esta tabla.
 
 ## Bucket de Storage `documentos`
 

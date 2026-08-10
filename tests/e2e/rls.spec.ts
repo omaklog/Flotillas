@@ -714,4 +714,128 @@ test.describe('RLS — casos negativos (constitución §4)', () => {
       .list(`licencia/${empresaAjenaId}/${conductorAjeno!.id}`)
     expect(listado ?? []).toEqual([])
   })
+
+  // T027 (005-asignacion-conductor-vehiculo, FR-011): caso positivo Y negativo — constitución §2
+  // "no basta con probar el camino permitido". Cualquiera de los dos módulos (vehiculos O
+  // conductores) con 'editar' MUST alcanzar, reflejando la política RLS ya vigente.
+  test('asignaciones_conductor_vehiculo: un operario con solo "ver" en ambos módulos puede leer pero no escribir; con "editar" en cualquiera de los dos, sí puede (US1-US3, FR-011)', async () => {
+    const admin = adminSupabaseClient()
+    const operario = await clienteAutenticado('operario-e2e@flotillas.local')
+    const {
+      data: { user }
+    } = await operario.auth.getUser()
+    const { data: perfil } = await operario
+      .from('usuarios')
+      .select('id, empresa_id')
+      .eq('auth_user_id', user!.id)
+      .single()
+    const { data: tipo } = await admin
+      .from('tipos_vehiculo')
+      .select('id')
+      .eq('empresa_id', perfil!.empresa_id!)
+      .eq('clave', 'ligero')
+      .single()
+
+    const { data: vehiculo } = await admin
+      .from('vehiculos')
+      .insert({
+        empresa_id: perfil!.empresa_id!,
+        marca: 'Vehículo RLS T027',
+        modelo: 'X',
+        placa: `RLS-T027-${Date.now()}`,
+        tipo_vehiculo_id: tipo!.id
+      })
+      .select('id')
+      .single()
+    const { data: conductor } = await admin
+      .from('conductores')
+      .insert({
+        empresa_id: perfil!.empresa_id!,
+        nombre: 'Conductor RLS T027',
+        apellidos: 'X',
+        numero_licencia: `RLS-T027-${Date.now()}`,
+        tipo_licencia: 'federal',
+        fecha_vencimiento_licencia: '2030-01-01'
+      })
+      .select('id')
+      .single()
+    const { data: asignacion } = await admin
+      .from('asignaciones_conductor_vehiculo')
+      .insert({
+        empresa_id: perfil!.empresa_id!,
+        vehiculo_id: vehiculo!.id,
+        conductor_id: conductor!.id,
+        asignado_por: perfil!.id
+      })
+      .select('id')
+      .single()
+
+    // Positivo: el operario SÍ puede leerla (tiene 'ver' en ambos módulos por defecto).
+    const { data: leida } = await operario
+      .from('asignaciones_conductor_vehiculo')
+      .select('id')
+      .eq('id', asignacion!.id)
+      .single()
+    expect(leida!.id).toBe(asignacion!.id)
+
+    // Negativo: sin 'editar' en ninguno de los dos módulos, no puede finalizarla.
+    const { data: intento1 } = await operario
+      .from('asignaciones_conductor_vehiculo')
+      .update({ fecha_fin: '2030-01-01' })
+      .eq('id', asignacion!.id)
+      .select()
+    expect(intento1).toEqual([])
+
+    // Positivo: con 'editar' otorgado SOLO en 'conductores' (no 'vehiculos'), sí puede.
+    await admin.from('usuario_permisos').insert({
+      empresa_id: perfil!.empresa_id!,
+      usuario_id: perfil!.id,
+      modulo_clave: 'conductores',
+      accion: 'editar',
+      otorgado_por: perfil!.id
+    })
+    const { data: intento2 } = await operario
+      .from('asignaciones_conductor_vehiculo')
+      .update({ fecha_fin: '2030-01-01' })
+      .eq('id', asignacion!.id)
+      .select()
+    expect(intento2).not.toEqual([])
+    await admin
+      .from('usuario_permisos')
+      .delete()
+      .eq('usuario_id', perfil!.id)
+      .eq('modulo_clave', 'conductores')
+      .eq('accion', 'editar')
+
+    // Positivo: con 'editar' otorgado SOLO en 'vehiculos' (no 'conductores'), también alcanza.
+    const { data: asignacion2 } = await admin
+      .from('asignaciones_conductor_vehiculo')
+      .insert({
+        empresa_id: perfil!.empresa_id!,
+        vehiculo_id: vehiculo!.id,
+        conductor_id: conductor!.id,
+        asignado_por: perfil!.id
+      })
+      .select('id')
+      .single()
+    await admin.from('usuario_permisos').insert({
+      empresa_id: perfil!.empresa_id!,
+      usuario_id: perfil!.id,
+      modulo_clave: 'vehiculos',
+      accion: 'editar',
+      otorgado_por: perfil!.id
+    })
+    const { data: intento3 } = await operario
+      .from('asignaciones_conductor_vehiculo')
+      .update({ fecha_fin: '2030-01-01' })
+      .eq('id', asignacion2!.id)
+      .select()
+    expect(intento3).not.toEqual([])
+    await admin
+      .from('usuario_permisos')
+      .delete()
+      .eq('usuario_id', perfil!.id)
+      .eq('modulo_clave', 'vehiculos')
+      .eq('accion', 'editar')
+  })
 })

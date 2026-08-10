@@ -58,6 +58,7 @@
       <v-tabs v-model="tabActiva" class="mb-4">
         <v-tab value="datos">Datos</v-tab>
         <v-tab value="historial">Historial de Póliza</v-tab>
+        <v-tab value="conductor">Conductor Asignado</v-tab>
         <v-tab value="permisos">Permisos</v-tab>
       </v-tabs>
 
@@ -171,6 +172,10 @@
             :poliza-vigente-id="vehiculo.poliza_archivo_id"
             @subida="cargar"
           />
+        </v-window-item>
+
+        <v-window-item value="conductor">
+          <VehiculosConductorAsignado :vehiculo-id="vehiculo.id" />
         </v-window-item>
 
         <v-window-item value="permisos">

@@ -18,7 +18,8 @@ const ETIQUETAS_DEPENDIENTES: Record<string, string> = {
   cargas_combustible: 'cargas de combustible',
   mantenimientos: 'mantenimientos',
   checklists: 'checklists',
-  servicios_obligatorios: 'servicios obligatorios'
+  servicios_obligatorios: 'servicios obligatorios',
+  asignaciones_conductor_vehiculo: 'asignaciones'
 }
 
 /**

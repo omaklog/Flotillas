@@ -87,4 +87,10 @@ rediseño de `HistorialPoliza.vue`) — sin generar un mockup pixel-a-pixel nuev
 Conductores, se sigue la regla de `CLAUDE.md` de ajustarse a ella antes de seguir iterando
 visualmente.
 
+**Feature 005 — Asignación Conductor-Vehículo**: tampoco tiene captura propia de Stitch.
+Reutiliza deliberadamente el lenguaje visual de `../design-system.md` más los patrones de layout
+ya construidos en Vehículos (003) y Conductores (004) — pestañas dentro de un detalle ya
+existente, historial en tabla — sin generar un mockup nuevo (research.md R8 de
+`specs/005-asignacion-conductor-vehiculo/`).
+
 Proyecto de origen en Stitch: `projects/4499192746969655413` ("FleetControl Enterprise").

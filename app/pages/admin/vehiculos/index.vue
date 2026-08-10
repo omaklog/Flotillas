@@ -66,6 +66,15 @@
         <td>
           <div class="d-flex align-center justify-end ga-1">
             <v-chip v-if="item.baja" color="grey" size="small" variant="tonal">Baja</v-chip>
+            <v-chip
+              v-if="!vehiculosConConductor.has(item.id)"
+              color="warning"
+              size="small"
+              variant="tonal"
+              :data-testid="`sin-conductor-badge-${item.id}`"
+            >
+              Sin conductor
+            </v-chip>
             <v-btn
               icon="mdi-delete-outline"
               size="small"
@@ -100,24 +109,37 @@ const UMBRAL_POR_VENCER_DIAS = 60
 const MS_POR_DIA = 24 * 60 * 60 * 1000
 
 const vehiculos = useVehiculos()
+const { listarVehiculosConAsignacionActiva } = useAsignaciones()
 
 const busqueda = ref('')
 const mostrarBaja = ref(false)
 const dialogoEliminarAbierto = ref(false)
 const registroAEliminar = ref<VehiculoListado | null>(null)
 const eliminando = ref(false)
+// Indicador "Sin conductor" (FR-013): dos consultas cruzadas en el cliente, no un `select`
+// anidado de PostgREST con filtro embebido (research.md R5 de 005-asignacion-conductor-vehiculo).
+const vehiculosConConductor = ref<Set<string>>(new Set())
 
-onMounted(() => {
-  vehiculos.listar()
+async function actualizarIndicadorConductor() {
+  const ids = vehiculos.registros.value.map((v) => v.id)
+  const activos = await listarVehiculosConAsignacionActiva(ids)
+  vehiculosConConductor.value = new Set(activos)
+}
+
+onMounted(async () => {
+  await vehiculos.listar()
+  await actualizarIndicadorConductor()
 })
 
 async function onBuscar(valor: string) {
   busqueda.value = valor
   await vehiculos.listar(valor, mostrarBaja.value)
+  await actualizarIndicadorConductor()
 }
 
 async function onCambiarFiltro() {
   await vehiculos.listar(busqueda.value, mostrarBaja.value)
+  await actualizarIndicadorConductor()
 }
 
 function abrirEliminar(item: VehiculoListado) {
@@ -131,6 +153,7 @@ async function onConfirmarEliminar() {
   try {
     await vehiculos.eliminar(registroAEliminar.value.id)
     await vehiculos.listar(busqueda.value, mostrarBaja.value)
+    await actualizarIndicadorConductor()
   } catch {
     // vehiculos.error ya tiene el mensaje mapeado (23503 → dependientes, visible en el
     // v-alert de arriba) — solo cerramos el diálogo para que quede visible.

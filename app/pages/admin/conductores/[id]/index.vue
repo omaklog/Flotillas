@@ -62,6 +62,7 @@
       <v-tabs v-model="tabActiva" class="mb-4">
         <v-tab value="datos">Datos</v-tab>
         <v-tab value="historial">Historial de Licencia</v-tab>
+        <v-tab value="vehiculos">Vehículos Asignados</v-tab>
       </v-tabs>
 
       <v-window v-model="tabActiva">
@@ -98,6 +99,10 @@
             :licencia-vigente-id="conductor.licencia_archivo_id"
             @subida="cargar"
           />
+        </v-window-item>
+
+        <v-window-item value="vehiculos">
+          <ConductoresVehiculosAsignados :conductor-id="conductor.id" />
         </v-window-item>
       </v-window>
     </template>

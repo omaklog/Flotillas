@@ -150,4 +150,12 @@ multi-línea), `detalle-vehiculo-historial-polizas.png` (historial de factura),
 `listado-flotilla-vehiculos-v2.png` (listado con filtros) y `listado-operarios-paginacion.png`
 (paginación) — sin generar mockups nuevos (research.md R2/R3/R10 de `specs/008-mantenimiento/`).
 
+**Feature 009 — Checklist de Aditamentos y Revisión de Seguridad**: no tiene captura propia de
+Stitch. Reutiliza `administracion-catalogos.png` (patrón modal-en-listado, para la pantalla de
+gestión de plantilla por tipo de vehículo), `gestion-vehiculo-alta-edicion.png` (estructura de
+formulario de captura), `listado-flotilla-vehiculos-v2.png` (listado con filtros) y
+`listado-operarios-paginacion.png` (paginación) — mismas 4 referencias de estilo que
+Combustible/Mantenimiento, sin generar mockups nuevos (research.md R1-R3 de
+`specs/009-checklist/`).
+
 Proyecto de origen en Stitch: `projects/4499192746969655413` ("FleetControl Enterprise").

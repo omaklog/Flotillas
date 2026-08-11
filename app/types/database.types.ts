@@ -394,30 +394,81 @@ export type Database = {
           },
         ]
       }
+      checklist_item_plantillas: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          es_critico: boolean
+          id: string
+          nombre_item: string
+          orden: number
+          tipo_vehiculo_id: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          es_critico?: boolean
+          id?: string
+          nombre_item: string
+          orden?: number
+          tipo_vehiculo_id: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          es_critico?: boolean
+          id?: string
+          nombre_item?: string
+          orden?: number
+          tipo_vehiculo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_item_plantillas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_item_plantillas_tipo_vehiculo_id_fkey"
+            columns: ["tipo_vehiculo_id"]
+            isOneToOne: false
+            referencedRelation: "tipos_vehiculo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_items: {
         Row: {
           checklist_id: string
           cumple: boolean
           empresa_id: string
+          es_critico: boolean
           id: string
           nombre_item: string
           observaciones: string | null
+          plantilla_item_id: string | null
         }
         Insert: {
           checklist_id: string
           cumple: boolean
           empresa_id: string
+          es_critico?: boolean
           id?: string
           nombre_item: string
           observaciones?: string | null
+          plantilla_item_id?: string | null
         }
         Update: {
           checklist_id?: string
           cumple?: boolean
           empresa_id?: string
+          es_critico?: boolean
           id?: string
           nombre_item?: string
           observaciones?: string | null
+          plantilla_item_id?: string | null
         }
         Relationships: [
           {
@@ -434,10 +485,18 @@ export type Database = {
             referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "checklist_items_plantilla_item_id_fkey"
+            columns: ["plantilla_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_item_plantillas"
+            referencedColumns: ["id"]
+          },
         ]
       }
       checklists: {
         Row: {
+          conductor_id: string | null
           created_at: string
           empresa_id: string
           fecha: string
@@ -448,6 +507,7 @@ export type Database = {
           vehiculo_id: string
         }
         Insert: {
+          conductor_id?: string | null
           created_at?: string
           empresa_id: string
           fecha?: string
@@ -458,6 +518,7 @@ export type Database = {
           vehiculo_id: string
         }
         Update: {
+          conductor_id?: string | null
           created_at?: string
           empresa_id?: string
           fecha?: string
@@ -468,6 +529,13 @@ export type Database = {
           vehiculo_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "checklists_conductor_id_fkey"
+            columns: ["conductor_id"]
+            isOneToOne: false
+            referencedRelation: "conductores"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "checklists_empresa_id_fkey"
             columns: ["empresa_id"]

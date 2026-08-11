@@ -1376,4 +1376,115 @@ test.describe('RLS — casos negativos (constitución §4)', () => {
 
     await admin.auth.admin.deleteUser(authOperario!.user.id)
   })
+
+  // T031 (009-checklist, research.md R2): a diferencia de T036/T038, el permiso real de
+  // escritura de checklist_item_plantillas es 'editar' — 'eliminar' existe en el catálogo de
+  // acciones pero ninguna política RLS lo referencia (checklist_item_plantillas_write, for all,
+  // solo verifica tiene_permiso('checklist','editar')).
+  test('checklist_item_plantillas: un operario sin "editar" no puede crear/editar/eliminar un ítem de plantilla; con el permiso otorgado, sí puede', async () => {
+    const admin = adminSupabaseClient()
+    const { data: perfilAdmin } = await admin
+      .from('usuarios')
+      .select('id, empresa_id')
+      .eq('correo', 'admin-e2e@flotillas.local')
+      .single()
+    const empresaId = perfilAdmin!.empresa_id!
+
+    const sufijo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const correoOperarioAislado = `operario-rls-t031-${sufijo}@flotillas.local`
+    const { data: authOperario, error: errAuth } = await admin.auth.admin.createUser({
+      email: correoOperarioAislado,
+      password: PASSWORD_PRUEBAS,
+      email_confirm: true
+    })
+    if (errAuth) throw errAuth
+    const { data: perfilOperario } = await admin
+      .from('usuarios')
+      .insert({
+        auth_user_id: authOperario!.user.id,
+        empresa_id: empresaId,
+        nombre: 'Operario RLS T031',
+        correo: correoOperarioAislado,
+        rol: 'operario',
+        activo: true
+      })
+      .select('id')
+      .single()
+
+    const { data: tipo } = await admin
+      .from('tipos_vehiculo')
+      .select('id')
+      .eq('empresa_id', empresaId)
+      .eq('clave', 'ligero')
+      .single()
+
+    const operarioAislado = await clienteAutenticado(correoOperarioAislado)
+
+    // Negativo: solo 'ver'+'crear' por defecto — bloqueado en crear/editar/eliminar la plantilla.
+    const { data: intentoCrear } = await operarioAislado
+      .from('checklist_item_plantillas')
+      .insert({
+        empresa_id: empresaId,
+        tipo_vehiculo_id: tipo!.id,
+        nombre_item: `Item RLS T031 ${sufijo}`,
+        orden: 0
+      })
+      .select()
+    expect(intentoCrear).toBeNull()
+
+    const { data: itemSembrado } = await admin
+      .from('checklist_item_plantillas')
+      .insert({
+        empresa_id: empresaId,
+        tipo_vehiculo_id: tipo!.id,
+        nombre_item: `Item RLS T031 sembrado ${sufijo}`,
+        orden: 0
+      })
+      .select('id')
+      .single()
+
+    const { data: intentoEditar } = await operarioAislado
+      .from('checklist_item_plantillas')
+      .update({ nombre_item: 'Intento sin permiso' })
+      .eq('id', itemSembrado!.id)
+      .select()
+    expect(intentoEditar).toEqual([])
+
+    const { data: intentoEliminar } = await operarioAislado
+      .from('checklist_item_plantillas')
+      .delete()
+      .eq('id', itemSembrado!.id)
+      .select()
+    expect(intentoEliminar).toEqual([])
+
+    // Positivo: con 'editar' otorgado explícitamente, sí puede.
+    await admin.from('usuario_permisos').insert({
+      empresa_id: empresaId,
+      usuario_id: perfilOperario!.id,
+      modulo_clave: 'checklist',
+      accion: 'editar',
+      otorgado_por: perfilOperario!.id
+    })
+
+    const { data: intentoCrearConPermiso } = await operarioAislado
+      .from('checklist_item_plantillas')
+      .insert({
+        empresa_id: empresaId,
+        tipo_vehiculo_id: tipo!.id,
+        nombre_item: `Item RLS T031 con permiso ${sufijo}`,
+        orden: 0
+      })
+      .select()
+    expect(intentoCrearConPermiso).not.toEqual([])
+    expect(intentoCrearConPermiso).not.toBeNull()
+
+    const { data: intentoEliminarConPermiso } = await operarioAislado
+      .from('checklist_item_plantillas')
+      .delete()
+      .eq('id', itemSembrado!.id)
+      .select()
+    expect(intentoEliminarConPermiso).not.toEqual([])
+
+    await admin.auth.admin.deleteUser(authOperario!.user.id)
+  })
 })

@@ -131,4 +131,13 @@ se usa `variant="text"` (deja todo transparente, correcto para todo salvo la act
 regla CSS con `:deep()` dirigida a la clase de estado `.v-pagination__item--is-active` que
 `v-pagination` ya agrega, forzando el relleno sólido solo ahí.
 
+**Feature 007 — Combustible**: no tiene captura propia de Stitch (verificado vía `list_screens` —
+ninguna pantalla del proyecto menciona "combustible"/"fuel"). Reutiliza 4 referencias ya
+descargadas: `gestion-vehiculo-alta-edicion.png` (estructura del formulario de captura),
+`detalle-vehiculo-historial-polizas.png` (historial de archivo con versión vigente destacada,
+aplicado al historial de factura), `listado-flotilla-vehiculos-v2.png` (listado con fila de
+filtros encima de la tabla) y `listado-operarios-paginacion.png` (estilo de paginación, ya
+estándar del proyecto) — sin generar un mockup nuevo (research.md R2/R3/R10 de
+`specs/007-combustible/`).
+
 Proyecto de origen en Stitch: `projects/4499192746969655413` ("FleetControl Enterprise").

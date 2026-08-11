@@ -42,6 +42,11 @@
           prepend-icon="mdi-package-variant-closed"
           title="Productos"
         />
+        <v-list-item
+          to="/admin/combustible"
+          prepend-icon="mdi-gas-station-outline"
+          title="Combustible"
+        />
         <v-list-item to="/admin/configuracion" prepend-icon="mdi-cog" title="Configuración" />
       </v-list>
     </v-navigation-drawer>

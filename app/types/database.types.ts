@@ -309,6 +309,7 @@ export type Database = {
           factura_archivo_id: string | null
           fecha: string
           id: string
+          motivo_cancelacion: string | null
           odometro: number
           producto_id: string
           proveedor_id: string
@@ -325,6 +326,7 @@ export type Database = {
           factura_archivo_id?: string | null
           fecha: string
           id?: string
+          motivo_cancelacion?: string | null
           odometro: number
           producto_id: string
           proveedor_id: string
@@ -341,6 +343,7 @@ export type Database = {
           factura_archivo_id?: string | null
           fecha?: string
           id?: string
+          motivo_cancelacion?: string | null
           odometro?: number
           producto_id?: string
           proveedor_id?: string

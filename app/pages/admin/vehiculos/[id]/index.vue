@@ -60,6 +60,7 @@
         <v-tab value="historial">Historial de Póliza</v-tab>
         <v-tab value="conductor">Conductor Asignado</v-tab>
         <v-tab value="permisos">Permisos</v-tab>
+        <v-tab value="actividad">Actividad</v-tab>
       </v-tabs>
 
       <v-window v-model="tabActiva">
@@ -180,6 +181,10 @@
 
         <v-window-item value="permisos">
           <VehiculosPermisosVehiculo :vehiculo-id="vehiculo.id" />
+        </v-window-item>
+
+        <v-window-item value="actividad">
+          <VehiculosActividadVehiculo :vehiculo-id="vehiculo.id" @cambiar-pestana="tabActiva = $event" />
         </v-window-item>
       </v-window>
     </template>

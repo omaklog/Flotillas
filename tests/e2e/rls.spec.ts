@@ -1629,4 +1629,59 @@ test.describe('RLS — casos negativos (constitución §4)', () => {
 
     await admin.auth.admin.deleteUser(authOperario!.user.id)
   })
+
+  // T021 (011-historial-auditoria, research.md R8): `auditoria` no tiene ninguna acción granular
+  // por permiso, a diferencia de las demás tablas de negocio — es exclusiva de admin/superusuario
+  // por rol, sin excepción otorgable.
+  test('auditoria: un operario (sin importar los permisos que tenga otorgados en cualquier módulo) no puede leer la bitácora de auditoría; un administrador de su propia empresa sí puede', async () => {
+    const admin = adminSupabaseClient()
+    const { data: perfilAdmin } = await admin
+      .from('usuarios')
+      .select('id, empresa_id')
+      .eq('correo', 'admin-e2e@flotillas.local')
+      .single()
+    const empresaId = perfilAdmin!.empresa_id!
+
+    const sufijo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const correoOperarioAislado = `operario-rls-t021-${sufijo}@flotillas.local`
+    const { data: authOperario, error: errAuth } = await admin.auth.admin.createUser({
+      email: correoOperarioAislado,
+      password: PASSWORD_PRUEBAS,
+      email_confirm: true
+    })
+    if (errAuth) throw errAuth
+    const { data: perfilOperario } = await admin
+      .from('usuarios')
+      .insert({
+        auth_user_id: authOperario!.user.id,
+        empresa_id: empresaId,
+        nombre: 'Operario RLS T021',
+        correo: correoOperarioAislado,
+        rol: 'operario',
+        activo: true
+      })
+      .select('id')
+      .single()
+    // Otorgado explícitamente en varios módulos — refuerza que ningún permiso granular abre
+    // acceso a auditoria, es exclusivo por rol.
+    await admin.from('usuario_permisos').insert([
+      { empresa_id: empresaId, usuario_id: perfilOperario!.id, modulo_clave: 'vehiculos', accion: 'editar', otorgado_por: perfilOperario!.id },
+      { empresa_id: empresaId, usuario_id: perfilOperario!.id, modulo_clave: 'servicios_obligatorios', accion: 'editar', otorgado_por: perfilOperario!.id }
+    ])
+
+    const operarioAislado = await clienteAutenticado(correoOperarioAislado)
+
+    // Negativo: RLS filtra todas las filas para un operario, sin importar los permisos.
+    const { data: intentoOperario, error: errOperario } = await operarioAislado.from('auditoria').select('*')
+    expect(errOperario).toBeNull()
+    expect(intentoOperario).toEqual([])
+
+    // Positivo: el admin de la misma empresa (no service_role) sí puede leer auditoria.
+    const adminAutenticado = await clienteAutenticado('admin-e2e@flotillas.local')
+    const { data: intentoAdmin, error: errAdmin } = await adminAutenticado.from('auditoria').select('*').limit(1)
+    expect(errAdmin).toBeNull()
+    expect(intentoAdmin!.length).toBeGreaterThan(0)
+
+    await admin.auth.admin.deleteUser(authOperario!.user.id)
+  })
 })

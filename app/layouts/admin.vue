@@ -62,6 +62,11 @@
           prepend-icon="mdi-file-certificate-outline"
           title="Servicios Obligatorios"
         />
+        <v-list-item
+          to="/admin/auditoria"
+          prepend-icon="mdi-history"
+          title="Bitácora de Auditoría"
+        />
         <v-list-item to="/admin/configuracion" prepend-icon="mdi-cog" title="Configuración" />
       </v-list>
     </v-navigation-drawer>

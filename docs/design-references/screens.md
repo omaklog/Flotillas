@@ -166,4 +166,10 @@ mismo umbral de 60 días y colores ya usados para pólizas), `listado-flotilla-v
 (listado con fila de filtros) y `listado-operarios-paginacion.png` (paginación) — mismas
 referencias de estilo que Combustible/Mantenimiento/Checklist, sin generar mockups nuevos.
 
+**Feature 011 — Historial por Vehículo y Bitácora de Auditoría**: no tiene captura propia de
+Stitch. Reutiliza `gestion-vehiculo-alta-edicion.png` (estilo de tabs, para la pestaña
+"Actividad" nueva dentro del detalle de vehículo ya construido), `listado-flotilla-vehiculos-v2.png`
+(listado con fila de filtros, para la bitácora de auditoría) y `listado-operarios-paginacion.png`
+(paginación) — mismas referencias de estilo que features anteriores, sin generar mockups nuevos.
+
 Proyecto de origen en Stitch: `projects/4499192746969655413` ("FleetControl Enterprise").

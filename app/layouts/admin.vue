@@ -47,6 +47,11 @@
           prepend-icon="mdi-gas-station-outline"
           title="Combustible"
         />
+        <v-list-item
+          to="/admin/mantenimiento"
+          prepend-icon="mdi-wrench-outline"
+          title="Mantenimiento"
+        />
         <v-list-item to="/admin/configuracion" prepend-icon="mdi-cog" title="Configuración" />
       </v-list>
     </v-navigation-drawer>

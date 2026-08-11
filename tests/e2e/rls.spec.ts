@@ -1281,4 +1281,99 @@ test.describe('RLS — casos negativos (constitución §4)', () => {
 
     await admin.auth.admin.deleteUser(authOperario!.user.id)
   })
+
+  // T038 (008-mantenimiento, FR-015, SC-004): mismo patrón que T036 de Combustible (007).
+  test('mantenimientos: un operario sin "cancelar" no puede cancelar una orden activa; con el permiso otorgado, sí puede', async () => {
+    const admin = adminSupabaseClient()
+    const { data: perfilAdmin } = await admin
+      .from('usuarios')
+      .select('id, empresa_id')
+      .eq('correo', 'admin-e2e@flotillas.local')
+      .single()
+    const empresaId = perfilAdmin!.empresa_id!
+
+    const sufijo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const correoOperarioAislado = `operario-rls-t038-${sufijo}@flotillas.local`
+    const { data: authOperario, error: errAuth } = await admin.auth.admin.createUser({
+      email: correoOperarioAislado,
+      password: PASSWORD_PRUEBAS,
+      email_confirm: true
+    })
+    if (errAuth) throw errAuth
+    const { data: perfilOperario } = await admin
+      .from('usuarios')
+      .insert({
+        auth_user_id: authOperario!.user.id,
+        empresa_id: empresaId,
+        nombre: 'Operario RLS T038',
+        correo: correoOperarioAislado,
+        rol: 'operario',
+        activo: true
+      })
+      .select('id')
+      .single()
+
+    const { data: tipo } = await admin
+      .from('tipos_vehiculo')
+      .select('id')
+      .eq('empresa_id', empresaId)
+      .eq('clave', 'ligero')
+      .single()
+    const { data: vehiculo } = await admin
+      .from('vehiculos')
+      .insert({
+        empresa_id: empresaId,
+        marca: 'Vehiculo RLS T038',
+        modelo: 'X',
+        placa: `RLS-T038-${sufijo}`,
+        tipo_vehiculo_id: tipo!.id
+      })
+      .select('id')
+      .single()
+    const { data: proveedor } = await admin
+      .from('proveedores')
+      .insert({ empresa_id: empresaId, nombre: `Proveedor RLS T038 ${sufijo}` })
+      .select('id')
+      .single()
+    const { data: orden } = await admin
+      .from('mantenimientos')
+      .insert({
+        empresa_id: empresaId,
+        vehiculo_id: vehiculo!.id,
+        proveedor_id: proveedor!.id,
+        tipo: 'correctivo',
+        fecha: '2026-08-01',
+        costo_total: 100,
+        creado_por: perfilAdmin!.id
+      })
+      .select('id')
+      .single()
+
+    const operarioAislado = await clienteAutenticado(correoOperarioAislado)
+
+    // Negativo: solo 'ver'+'crear' por defecto — bloqueado en cancelar.
+    const { data: intentoCancelar } = await operarioAislado
+      .from('mantenimientos')
+      .update({ estado: 'cancelado', motivo_cancelacion: 'Intento sin permiso' })
+      .eq('id', orden!.id)
+      .select()
+    expect(intentoCancelar).toEqual([])
+
+    // Positivo: con 'cancelar' otorgado explícitamente, sí puede.
+    await admin.from('usuario_permisos').insert({
+      empresa_id: empresaId,
+      usuario_id: perfilOperario!.id,
+      modulo_clave: 'mantenimiento',
+      accion: 'cancelar',
+      otorgado_por: perfilOperario!.id
+    })
+    const { data: intentoConPermiso } = await operarioAislado
+      .from('mantenimientos')
+      .update({ estado: 'cancelado', motivo_cancelacion: 'Con permiso otorgado' })
+      .eq('id', orden!.id)
+      .select()
+    expect(intentoConPermiso).not.toEqual([])
+
+    await admin.auth.admin.deleteUser(authOperario!.user.id)
+  })
 })

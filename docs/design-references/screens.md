@@ -140,4 +140,14 @@ filtros encima de la tabla) y `listado-operarios-paginacion.png` (estilo de pagi
 estándar del proyecto) — sin generar un mockup nuevo (research.md R2/R3/R10 de
 `specs/007-combustible/`).
 
+**Feature 008 — Mantenimiento (Correctivo y Preventivo)**: no tiene captura/listado propios de
+Stitch para captura/listado. `Calendario de Mantenimiento` (`calendario-mantenimiento.png`)
+describe una vista de calendario/próximos servicios que pertenece a la feature de
+Alertas/Dashboard (spec.md, "Fuera de Alcance") — no se implementa aquí; solo se reutiliza su
+estilo de chips de estado/prioridad y el filtro superior. El resto reutiliza las mismas 4
+referencias que Combustible (007): `gestion-vehiculo-alta-edicion.png` (formulario de captura
+multi-línea), `detalle-vehiculo-historial-polizas.png` (historial de factura),
+`listado-flotilla-vehiculos-v2.png` (listado con filtros) y `listado-operarios-paginacion.png`
+(paginación) — sin generar mockups nuevos (research.md R2/R3/R10 de `specs/008-mantenimiento/`).
+
 Proyecto de origen en Stitch: `projects/4499192746969655413` ("FleetControl Enterprise").

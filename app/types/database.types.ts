@@ -636,6 +636,7 @@ export type Database = {
       }
       mantenimiento_detalles: {
         Row: {
+          cantidad: number | null
           created_at: string
           empresa_id: string
           id: string
@@ -652,6 +653,7 @@ export type Database = {
           servicio_frecuencia_km: number | null
         }
         Insert: {
+          cantidad?: number | null
           created_at?: string
           empresa_id: string
           id?: string
@@ -668,6 +670,7 @@ export type Database = {
           servicio_frecuencia_km?: number | null
         }
         Update: {
+          cantidad?: number | null
           created_at?: string
           empresa_id?: string
           id?: string
@@ -717,6 +720,7 @@ export type Database = {
           factura_archivo_id: string | null
           fecha: string
           id: string
+          motivo_cancelacion: string | null
           notas: string | null
           proveedor_id: string
           tipo: Database["public"]["Enums"]["tipo_mantenimiento"]
@@ -731,6 +735,7 @@ export type Database = {
           factura_archivo_id?: string | null
           fecha: string
           id?: string
+          motivo_cancelacion?: string | null
           notas?: string | null
           proveedor_id: string
           tipo: Database["public"]["Enums"]["tipo_mantenimiento"]
@@ -745,6 +750,7 @@ export type Database = {
           factura_archivo_id?: string | null
           fecha?: string
           id?: string
+          motivo_cancelacion?: string | null
           notas?: string | null
           proveedor_id?: string
           tipo?: Database["public"]["Enums"]["tipo_mantenimiento"]

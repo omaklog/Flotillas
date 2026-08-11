@@ -493,6 +493,45 @@ test.describe('US1 — Administrador captura una orden de mantenimiento', () => 
       .eq('vehiculo_id', vehiculo.id)
     expect(ordenes).toHaveLength(1)
   })
+
+  test('T044: el costo total no se autocalcula al agregar/quitar líneas ni al cambiar su cantidad (FR-008)', async ({
+    page,
+    context
+  }) => {
+    const { vehiculo, proveedor, refaccion, servicio } = await prepararEmpresaMantenimiento(page, context, 'T044')
+
+    await irAFormularioOrden(page)
+    await llenarDatosOrden(page, {
+      tipo: 'Correctivo',
+      vehiculoPlaca: vehiculo.placa,
+      proveedorNombre: proveedor.nombre,
+      fecha: '2026-08-01',
+      costoTotal: 350
+    })
+    await agregarLineaProducto(page, 0, refaccion.nombre)
+    await page.getByLabel('Cantidad de la línea 1', { exact: true }).fill('2')
+    await expect(page.getByLabel('Costo total', { exact: true })).toHaveValue('350')
+
+    // Cambiar la cantidad de la línea no debe tocar el costo total (a diferencia de Combustible).
+    await page.getByLabel('Cantidad de la línea 1', { exact: true }).fill('9')
+    await expect(page.getByLabel('Costo total', { exact: true })).toHaveValue('350')
+
+    // Agregar una segunda línea tampoco debe tocarlo.
+    await agregarLineaProducto(page, 1, servicio.nombre)
+    await page.getByLabel('Fecha de próximo servicio de la línea 2', { exact: true }).fill('2027-01-01')
+    await expect(page.getByLabel('Costo total', { exact: true })).toHaveValue('350')
+
+    // Quitar una línea tampoco debe tocarlo.
+    await page.getByTestId('linea-1-quitar').click()
+    await expect(page.getByLabel('Costo total', { exact: true })).toHaveValue('350')
+
+    await page.getByTestId('submit-btn').click()
+    await page.waitForURL((url) => /\/admin\/mantenimiento\/[0-9a-f-]+$/.test(url.pathname), {
+      timeout: 10_000
+    })
+    await esperarHidratacion(page)
+    await expect(page.getByTestId('tarjeta-datos')).toContainText('350')
+  })
 })
 
 async function sembrarOrden(

@@ -458,3 +458,13 @@ Task: "Playwright: fallo del insert de líneas ofrece reintentar"
 - Verificar que los tests fallan antes de implementar.
 - Commit después de cada tarea o grupo lógico.
 - Parar en el checkpoint para validar cada historia de forma independiente antes de continuar.
+
+---
+
+## Phase 7: Convergence
+
+- [X] T044 Playwright: agregar una prueba en `tests/e2e/mantenimiento.spec.ts` que capture un
+      costo total, agregue una línea adicional (o cambie la cantidad de una línea existente), y
+      confirme que el costo total visible/guardado permanece exactamente el valor capturado por
+      el usuario, sin recalcularse (FR-008, missing — hallazgo F1 de `/speckit-analyze` sobre
+      esta feature, nunca remediado antes de `/speckit-implement`)

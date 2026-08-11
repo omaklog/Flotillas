@@ -224,6 +224,10 @@
         :length="totalPaginas"
         density="comfortable"
         total-visible="5"
+        variant="text"
+        active-color="primary"
+        rounded="lg"
+        class="app-pagination"
         data-testid="paginacion-operarios"
       />
     </div>
@@ -421,3 +425,13 @@ async function onConfirmarEliminar() {
 
 onMounted(cargarOperarios)
 </script>
+
+<style scoped>
+/* Ver la misma nota en app/components/catalogos/TablaCatalogo.vue — `variant="text"` deja
+prev/next/elipsis/inactivas transparentes (correcto), pero también a la página activa; se fuerza
+su relleno sólido aquí, dirigido a la clase de estado que v-pagination ya agrega. */
+.app-pagination :deep(.v-pagination__item--is-active .v-btn) {
+  background-color: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+}
+</style>

@@ -31,10 +31,11 @@ async function abrirDialogo(page: Page, activador: Locator) {
 /**
  * Localiza una fila filtrando primero por el buscador (deja el filtro activo). El catálogo de
  * `Empresa E2E` es compartido entre corridas de test y acumula registros previos;
- * `TablaCatalogo.vue` pagina de a 20 — sin filtrar, una fila recién creada puede quedar en una
- * página que el test nunca visita si el catálogo ya tiene más de 20 registros (visto de forma
- * reproducible: el catálogo de permisos superó ese umbral durante el desarrollo de esta
- * feature). Buscar dexa además acotadas las búsquedas de filas subsecuentes en el mismo test.
+ * `TablaCatalogo.vue` pagina (10 por página por defecto, seleccionable 5/10/20) — sin filtrar,
+ * una fila recién creada puede quedar en una página que el test nunca visita si el catálogo ya
+ * tiene más registros que el tamaño de página vigente (visto de forma reproducible: el catálogo
+ * de permisos superó ese umbral durante el desarrollo de esta feature). Buscar deja además
+ * acotadas las búsquedas de filas subsecuentes en el mismo test.
  */
 async function buscarFila(page: Page, texto: string): Promise<Locator> {
   await page.getByLabel('Buscar por nombre o clave', { exact: true }).fill(texto)

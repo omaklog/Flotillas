@@ -17,7 +17,7 @@ function adminSupabaseClient() {
 /**
  * Localiza una fila filtrando primero por el buscador (deja el filtro activo) — mismo criterio
  * que Catálogos Base: el catálogo de `Empresa E2E` es compartido entre corridas y
- * `TablaCatalogo.vue` pagina de a 20.
+ * `TablaCatalogo.vue` pagina (10 por página por defecto, seleccionable 5/10/20).
  */
 async function buscarFila(page: Page, texto: string): Promise<Locator> {
   await page.getByLabel('Buscar por marca, modelo o placa', { exact: true }).fill(texto)

@@ -15,7 +15,7 @@ function adminSupabaseClient() {
 /**
  * Localiza una fila filtrando primero por el buscador (deja el filtro activo) — mismo criterio
  * que Vehículos/Catálogos Base: el catálogo de `Empresa E2E` es compartido entre corridas y
- * `TablaCatalogo.vue` pagina de a 20.
+ * `TablaCatalogo.vue` pagina (10 por página por defecto, seleccionable 5/10/20).
  */
 async function buscarFila(page: Page, texto: string): Promise<Locator> {
   await page.getByLabel('Buscar por nombre o apellidos', { exact: true }).fill(texto)
@@ -258,12 +258,19 @@ test.describe('US2 — Administrador busca y consulta el listado de conductores'
     page
   }) => {
     const { admin, empresaId } = await empresaAdmin()
-    const nombre = `Pedro T019 ${Date.now()}`
-    const numeroLicencia = `T019-${Date.now()}`
+    const sufijo = Date.now()
+    const nombre = `Pedro T019 ${sufijo}`
+    // Apellido único por corrida (no genérico "Torres"): con TablaCatalogo.vue paginando 10 por
+    // página por defecto, un apellido compartido con decenas de conductores acumulados de otras
+    // corridas de este mismo catálogo (`Empresa E2E`) empuja fácilmente la fila fuera de la
+    // primera página — mismo criterio de "acotar la búsqueda" ya aplicado en el resto del
+    // proyecto para el buscador por nombre.
+    const apellidos = `Torres T019 ${sufijo}`
+    const numeroLicencia = `T019-${sufijo}`
     await admin.from('conductores').insert({
       empresa_id: empresaId,
       nombre,
-      apellidos: 'Torres',
+      apellidos,
       numero_licencia: numeroLicencia,
       tipo_licencia: 'federal',
       fecha_vencimiento_licencia: '2030-01-01'
@@ -275,7 +282,7 @@ test.describe('US2 — Administrador busca y consulta el listado de conductores'
     await expect(fila).toContainText(numeroLicencia)
 
     // El buscador también filtra por apellidos, no solo nombre.
-    await page.getByLabel('Buscar por nombre o apellidos', { exact: true }).fill('Torres')
+    await page.getByLabel('Buscar por nombre o apellidos', { exact: true }).fill(apellidos)
     await expect(fila).toBeVisible()
   })
 

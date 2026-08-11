@@ -108,9 +108,10 @@ test.describe('US2 — Administrador gestiona productos', () => {
     await page.goto('/admin/productos')
     await esperarHidratacion(page)
 
-    // Buscador por nombre: acota a los 2 productos sembrados (evita la paginación de 20/página
-    // del catálogo compartido de "Empresa E2E", que ya tiene decenas de productos de otras
-    // corridas — mismo criterio ya documentado en `buscarFila` de otros specs de este proyecto).
+    // Buscador por nombre: acota a los 2 productos sembrados (evita la paginación de
+    // `TablaCatalogo.vue`, 10 por página por defecto, del catálogo compartido de "Empresa E2E",
+    // que ya tiene decenas de productos de otras corridas — mismo criterio ya documentado en
+    // `buscarFila` de otros specs de este proyecto).
     await page.getByLabel('Buscar por nombre', { exact: true }).fill(prefijoComun)
     await expect(page.locator('[data-testid="productos-tabla"] tbody tr', { hasText: prefijoComun })).toHaveCount(2, {
       timeout: 10_000

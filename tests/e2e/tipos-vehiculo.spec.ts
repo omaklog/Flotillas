@@ -17,9 +17,10 @@ function adminSupabaseClient() {
 /**
  * Localiza una fila filtrando primero por el buscador (deja el filtro activo). El catálogo de
  * `Empresa E2E` es compartido entre corridas de test y acumula registros previos;
- * `TablaCatalogo.vue` pagina de a 20 — sin filtrar, una fila recién creada puede quedar en una
- * página que el test nunca visita si el catálogo ya tiene más de 20 registros (visto de forma
- * reproducible durante el desarrollo de esta feature).
+ * `TablaCatalogo.vue` pagina (10 por página por defecto, seleccionable 5/10/20) — sin filtrar,
+ * una fila recién creada puede quedar en una página que el test nunca visita si el catálogo ya
+ * tiene más registros que el tamaño de página vigente (visto de forma reproducible durante el
+ * desarrollo de esta feature).
  */
 async function buscarFila(page: Page, texto: string): Promise<Locator> {
   await page.getByLabel('Buscar por nombre', { exact: true }).fill(texto)

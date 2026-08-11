@@ -28,6 +28,7 @@ Sigue el mismo lenguaje visual descrito en `../design-system.md`.
 | Detalle de Vehículo: Datos Generales | Vehículos (003, `admin/vehiculos/[id].vue`) | `screens/detalle-vehiculo-datos-generales.png` | `94fd194837ed400598c50cbed163aab0` |
 | Detalle de Vehículo: Historial de Pólizas | Vehículos (003, `admin/vehiculos/[id]/index.vue`, pestaña "Historial de Póliza", `components/vehiculos/HistorialPoliza.vue`) | `screens/detalle-vehiculo-historial-polizas.png` | `70e72834d4ee4bd08560b2617249ff35` |
 | Detalle de Conductor: Datos Generales | Conductores (004, `admin/conductores/[id]/index.vue`, pestaña "Datos" — actualización posterior "Foto del Conductor", 2026-08-10) | `screens/detalle-conductor-datos-generales.png` | `d3847082278f4718b7436a7868767d58` |
+| Listado de Operarios con Paginación | Patrón de paginación de `TablaCatalogo.vue` (compartido por todos los listados de catálogo) y `admin/usuarios/index.vue` | `screens/listado-operarios-paginacion.png` | `f4c2fb8e23004454933ef5d05447c9bc` |
 
 Las 3 anteriores a estas 2 últimas se descargaron el 2026-08-07, vía el workaround de `curl`
 directo documentado en `../../CLAUDE.md` § "Design system compliance" (el MCP de Stitch tenía
@@ -116,5 +117,18 @@ Reutiliza deliberadamente el patrón "modal en listado" ya construido y validado
 activo/inactivo con motivo obligatorio ya construido en Vehículos/Conductores (checkbox "Mostrar
 inactivos", chip "Inactivo", diálogo de motivo) para Proveedores — sin generar un mockup nuevo
 (research.md R3/R8 de `specs/006-catalogos-base-ii/`).
+
+**`listado-operarios-paginacion.png`** se generó y descargó el 2026-08-10, directo en la UI de
+Stitch por el usuario, para corregir el estilo de `v-pagination` — hasta entonces sin `variant`
+ni `color` propios, heredando el look plano por defecto de Vuetify. Aplicado a
+`TablaCatalogo.vue` (compartido por todos los listados de catálogo, incluidos los de Proveedores/
+Productos de Feature 006) y a `admin/usuarios/index.vue` (la única otra pantalla con su propio
+`v-pagination`, nombrada explícitamente como referencia en `docs/design-system.md` § Pagination).
+Página activa: cuadrado navy sólido (`primary`/`on-primary`) con esquinas redondeadas
+(`rounded="lg"`); páginas inactivas, elipsis y flechas prev/next: sin fondo, solo texto/ícono.
+Vuetify no permite variantes distintas por botón vía props (`variant` aplica parejo a todos) —
+se usa `variant="text"` (deja todo transparente, correcto para todo salvo la activa) más una
+regla CSS con `:deep()` dirigida a la clase de estado `.v-pagination__item--is-active` que
+`v-pagination` ya agrega, forzando el relleno sólido solo ahí.
 
 Proyecto de origen en Stitch: `projects/4499192746969655413` ("FleetControl Enterprise").

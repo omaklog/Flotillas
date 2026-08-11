@@ -57,6 +57,11 @@
           prepend-icon="mdi-clipboard-check-outline"
           title="Checklist"
         />
+        <v-list-item
+          to="/admin/servicios-obligatorios"
+          prepend-icon="mdi-file-certificate-outline"
+          title="Servicios Obligatorios"
+        />
         <v-list-item to="/admin/configuracion" prepend-icon="mdi-cog" title="Configuración" />
       </v-list>
     </v-navigation-drawer>

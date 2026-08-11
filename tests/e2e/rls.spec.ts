@@ -1487,4 +1487,146 @@ test.describe('RLS — casos negativos (constitución §4)', () => {
 
     await admin.auth.admin.deleteUser(authOperario!.user.id)
   })
+
+  // T030 (010-servicios-obligatorios, research.md R2): a diferencia de T031 de Checklist (solo
+  // 'eliminar' es la acción sin efecto), aquí NINGUNA de 'crear'/'eliminar' por separado
+  // desbloquea escritura — la única política (`servicios_obligatorios_write`, `for all`) verifica
+  // únicamente 'editar'. Se prueban las 4 combinaciones: sin permiso, solo 'crear', solo
+  // 'eliminar', y con 'editar'.
+  test('servicios_obligatorios: un operario sin "editar" no puede crear/editar/eliminar ni con "crear"/"eliminar" otorgados por separado; con "editar" otorgado, sí puede', async () => {
+    const admin = adminSupabaseClient()
+    const { data: perfilAdmin } = await admin
+      .from('usuarios')
+      .select('id, empresa_id')
+      .eq('correo', 'admin-e2e@flotillas.local')
+      .single()
+    const empresaId = perfilAdmin!.empresa_id!
+
+    const sufijo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const correoOperarioAislado = `operario-rls-t030-${sufijo}@flotillas.local`
+    const { data: authOperario, error: errAuth } = await admin.auth.admin.createUser({
+      email: correoOperarioAislado,
+      password: PASSWORD_PRUEBAS,
+      email_confirm: true
+    })
+    if (errAuth) throw errAuth
+    const { data: perfilOperario } = await admin
+      .from('usuarios')
+      .insert({
+        auth_user_id: authOperario!.user.id,
+        empresa_id: empresaId,
+        nombre: 'Operario RLS T030',
+        correo: correoOperarioAislado,
+        rol: 'operario',
+        activo: true
+      })
+      .select('id')
+      .single()
+
+    const { data: tipo } = await admin
+      .from('tipos_vehiculo')
+      .select('id')
+      .eq('empresa_id', empresaId)
+      .eq('clave', 'ligero')
+      .single()
+    const { data: vehiculo } = await admin
+      .from('vehiculos')
+      .insert({
+        empresa_id: empresaId,
+        marca: 'Vehiculo RLS T030',
+        modelo: 'X',
+        placa: `RLS-T030-${sufijo}`,
+        tipo_vehiculo_id: tipo!.id
+      })
+      .select('id')
+      .single()
+
+    const operarioAislado = await clienteAutenticado(correoOperarioAislado)
+
+    const payloadBase = {
+      empresa_id: empresaId,
+      vehiculo_id: vehiculo!.id,
+      tipo: 'verificacion_ambiental' as const,
+      fecha_realizado: '2026-08-01',
+      fecha_vencimiento: '2026-12-01'
+    }
+
+    // Negativo 1: sin ningún permiso otorgado — bloqueado.
+    const { data: intentoSinPermiso } = await operarioAislado
+      .from('servicios_obligatorios')
+      .insert(payloadBase)
+      .select()
+    expect(intentoSinPermiso).toBeNull()
+
+    // Negativo 2: con 'crear' otorgado — research.md R2, sigue bloqueado.
+    await admin.from('usuario_permisos').insert({
+      empresa_id: empresaId,
+      usuario_id: perfilOperario!.id,
+      modulo_clave: 'servicios_obligatorios',
+      accion: 'crear',
+      otorgado_por: perfilOperario!.id
+    })
+    const { data: intentoSoloCrear } = await operarioAislado
+      .from('servicios_obligatorios')
+      .insert(payloadBase)
+      .select()
+    expect(intentoSoloCrear).toBeNull()
+
+    // Sembrar un servicio con el cliente admin para probar 'eliminar' por separado.
+    const { data: servicioSembrado } = await admin
+      .from('servicios_obligatorios')
+      .insert(payloadBase)
+      .select('id')
+      .single()
+
+    // Negativo 3: con 'eliminar' otorgado (en vez de 'crear') — sigue bloqueado, ni siquiera
+    // puede eliminar el servicio ya sembrado.
+    await admin.from('usuario_permisos').delete().eq('usuario_id', perfilOperario!.id).eq('accion', 'crear')
+    await admin.from('usuario_permisos').insert({
+      empresa_id: empresaId,
+      usuario_id: perfilOperario!.id,
+      modulo_clave: 'servicios_obligatorios',
+      accion: 'eliminar',
+      otorgado_por: perfilOperario!.id
+    })
+    const { data: intentoSoloEliminar } = await operarioAislado
+      .from('servicios_obligatorios')
+      .delete()
+      .eq('id', servicioSembrado!.id)
+      .select()
+    expect(intentoSoloEliminar).toEqual([])
+
+    // Positivo: con 'editar' otorgado, sí puede crear, editar, y eliminar.
+    await admin.from('usuario_permisos').delete().eq('usuario_id', perfilOperario!.id).eq('accion', 'eliminar')
+    await admin.from('usuario_permisos').insert({
+      empresa_id: empresaId,
+      usuario_id: perfilOperario!.id,
+      modulo_clave: 'servicios_obligatorios',
+      accion: 'editar',
+      otorgado_por: perfilOperario!.id
+    })
+    const { data: intentoConEditar, error: errConEditar } = await operarioAislado
+      .from('servicios_obligatorios')
+      .insert(payloadBase)
+      .select()
+      .single()
+    expect(errConEditar).toBeNull()
+    expect(intentoConEditar).not.toBeNull()
+
+    const { data: intentoEditarConPermiso } = await operarioAislado
+      .from('servicios_obligatorios')
+      .update({ fecha_vencimiento: '2027-01-01' })
+      .eq('id', intentoConEditar!.id)
+      .select()
+    expect(intentoEditarConPermiso).not.toEqual([])
+
+    const { data: intentoEliminarConPermiso } = await operarioAislado
+      .from('servicios_obligatorios')
+      .delete()
+      .eq('id', intentoConEditar!.id)
+      .select()
+    expect(intentoEliminarConPermiso).not.toEqual([])
+
+    await admin.auth.admin.deleteUser(authOperario!.user.id)
+  })
 })

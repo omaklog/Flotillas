@@ -1416,6 +1416,7 @@ export type Database = {
         | "factura"
         | "foto"
         | "foto_conductor"
+        | "testigo_servicio"
       tipo_licencia: "federal" | "local"
       tipo_mantenimiento: "correctivo" | "preventivo"
       tipo_permiso: "estatal" | "federal"
@@ -1574,7 +1575,14 @@ export const Constants = {
       estado_registro: ["activo", "cancelado"],
       resultado_checklist: ["aprobado", "con_observaciones"],
       rol_usuario: ["superusuario", "admin", "operario"],
-      tipo_archivo: ["poliza", "licencia", "factura", "foto", "foto_conductor"],
+      tipo_archivo: [
+        "poliza",
+        "licencia",
+        "factura",
+        "foto",
+        "foto_conductor",
+        "testigo_servicio",
+      ],
       tipo_licencia: ["federal", "local"],
       tipo_mantenimiento: ["correctivo", "preventivo"],
       tipo_permiso: ["estatal", "federal"],

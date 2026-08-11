@@ -158,4 +158,12 @@ formulario de captura), `listado-flotilla-vehiculos-v2.png` (listado con filtros
 Combustible/Mantenimiento, sin generar mockups nuevos (research.md R1-R3 de
 `specs/009-checklist/`).
 
+**Feature 010 — Bitácora de Servicios Obligatorios**: no tiene captura propia de Stitch. Reutiliza
+`gestion-vehiculo-alta-edicion.png` (estructura de formulario de captura/edición, compartido entre
+alta y edición — research.md R6 de `specs/010-servicios-obligatorios/`),
+`detalle-vehiculo-historial-polizas.png` (patrón de comprobante adjunto + indicador de vigencia,
+mismo umbral de 60 días y colores ya usados para pólizas), `listado-flotilla-vehiculos-v2.png`
+(listado con fila de filtros) y `listado-operarios-paginacion.png` (paginación) — mismas
+referencias de estilo que Combustible/Mantenimiento/Checklist, sin generar mockups nuevos.
+
 Proyecto de origen en Stitch: `projects/4499192746969655413` ("FleetControl Enterprise").

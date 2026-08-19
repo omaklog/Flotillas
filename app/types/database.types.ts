@@ -67,7 +67,7 @@ export type Database = {
           entidad_id: string
           entidad_tipo: string
           estado: Database["public"]["Enums"]["estado_alerta"]
-          fecha_vencimiento: string
+          fecha_vencimiento: string | null
           id: string
           tipo: string
         }
@@ -77,7 +77,7 @@ export type Database = {
           entidad_id: string
           entidad_tipo: string
           estado?: Database["public"]["Enums"]["estado_alerta"]
-          fecha_vencimiento: string
+          fecha_vencimiento?: string | null
           id?: string
           tipo: string
         }
@@ -87,7 +87,7 @@ export type Database = {
           entidad_id?: string
           entidad_tipo?: string
           estado?: Database["public"]["Enums"]["estado_alerta"]
-          fecha_vencimiento?: string
+          fecha_vencimiento?: string | null
           id?: string
           tipo?: string
         }
@@ -1405,6 +1405,7 @@ export type Database = {
         | "cancelar"
         | "desactivar"
         | "reactivar"
+        | "exportar"
       condicion_llanta: "nueva" | "renovada"
       estado_alerta: "pendiente" | "enviada" | "resuelta"
       estado_registro: "activo" | "cancelado"
@@ -1569,6 +1570,7 @@ export const Constants = {
         "cancelar",
         "desactivar",
         "reactivar",
+        "exportar",
       ],
       condicion_llanta: ["nueva", "renovada"],
       estado_alerta: ["pendiente", "enviada", "resuelta"],

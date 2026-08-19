@@ -74,6 +74,7 @@
     <v-app-bar flat class="app-bar-glass">
       <v-app-bar-title class="text-section-title">Panel de Administrador</v-app-bar-title>
       <v-spacer />
+      <AppNotificacionesAlertas />
       <AppMenuPerfil />
     </v-app-bar>
 

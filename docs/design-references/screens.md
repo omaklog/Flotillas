@@ -172,4 +172,11 @@ Stitch. Reutiliza `gestion-vehiculo-alta-edicion.png` (estilo de tabs, para la p
 (listado con fila de filtros, para la bitácora de auditoría) y `listado-operarios-paginacion.png`
 (paginación) — mismas referencias de estilo que features anteriores, sin generar mockups nuevos.
 
+**Feature 012 — Alertas y Dashboard**: no tiene captura propia de Stitch. Reutiliza
+`dashboard-flotilla.png` como referencia de **estilo** (tarjetas de KPI, ícono de campana en la
+barra superior, layout de tarjetas + gráficas) — sus métricas exactas (consumo de combustible,
+distribución de flota) no son las de esta feature, que define su propio set de 4 KPIs + 3
+gráficas + indicador de cumplimiento (spec.md US-12.3 de `specs/012-alertas-dashboard/`) — sin
+generar un mockup nuevo.
+
 Proyecto de origen en Stitch: `projects/4499192746969655413` ("FleetControl Enterprise").

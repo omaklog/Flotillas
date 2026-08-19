@@ -5,6 +5,7 @@
     <v-app-bar v-if="usuario" flat class="app-bar-glass">
       <v-app-bar-title class="text-section-title">Flotillas</v-app-bar-title>
       <v-spacer />
+      <AppNotificacionesAlertas />
       <AppMenuPerfil />
     </v-app-bar>
 

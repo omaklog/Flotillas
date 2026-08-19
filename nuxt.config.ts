@@ -6,7 +6,14 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
   devServer: {
-    port: 3030
+    port: 3030,
+    // Por defecto Nitro solo escucha en 'localhost', que en este Mac resuelve primero a ::1
+    // (IPv6) — inalcanzable desde dentro de un contenedor Docker. La Edge Function
+    // `generar-alertas` (Feature 012) corre en un contenedor aparte y necesita llamar de vuelta
+    // a este servidor (`ALERTAS_NOTIFICAR_URL=http://host.docker.internal:3030/...`,
+    // research.md R2 de specs/012-alertas-dashboard/) — eso solo funciona si el servidor escucha
+    // en todas las interfaces IPv4, no solo loopback IPv6.
+    host: '0.0.0.0'
   },
 
   // `cookie` (dependencia de @supabase/ssr, vía @nuxtjs/supabase) es CJS puro sin `exports`
@@ -83,6 +90,7 @@ export default defineNuxtConfig({
     smtpPort: process.env.SMTP_PORT,
     smtpUser: process.env.SMTP_USER,
     smtpPassword: process.env.SMTP_PASSWORD,
+    alertasCronSecret: process.env.ALERTAS_CRON_SECRET,
     public: {
       // Expuesto al cliente.
       turnstileSiteKey: process.env.TURNSTILE_SITE_KEY

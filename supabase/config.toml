@@ -318,8 +318,18 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+[edge_runtime.secrets]
+# Mismo secreto que `server/api/alertas/notificar.post.ts` lee de su propio runtimeConfig
+# (Feature 012, research.md R2 de specs/012-alertas-dashboard/) — permite que la Edge Function
+# `generar-alertas` se autentique contra ese endpoint interno. Valor real en `.env` (raíz del
+# proyecto), nunca aquí.
+ALERTAS_CRON_SECRET = "env(ALERTAS_CRON_SECRET)"
+# URL del propio servidor Nitro de la app, específica de entorno (research.md R2). En local, el
+# runtime de Edge Functions corre en un contenedor Docker separado del proceso `yarn dev` (que
+# corre directo en el host, no en un contenedor) — `127.0.0.1:3030` desde DENTRO del contenedor
+# no llega al host; `host.docker.internal` es el nombre especial que Docker Desktop (Mac/Windows)
+# resuelve automáticamente al host. En staging/producción, MUST apuntar a la URL real desplegada.
+ALERTAS_NOTIFICAR_URL = "env(ALERTAS_NOTIFICAR_URL)"
 
 # Desactivado localmente: el contenedor `vector` (recolector de logs) falla su healthcheck en
 # esta máquina y tumba todo el stack de `supabase start` con él — no se necesita para

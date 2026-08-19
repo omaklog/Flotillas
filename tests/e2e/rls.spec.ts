@@ -1684,4 +1684,230 @@ test.describe('RLS — casos negativos (constitución §4)', () => {
 
     await admin.auth.admin.deleteUser(authOperario!.user.id)
   })
+
+  // T036 (012-alertas-dashboard, constitución §4): las alertas solo las crea la Edge Function
+  // (`service_role`, bypassea RLS) — la única escritura de cliente expuesta es `alertas_update`,
+  // gateada por `tiene_permiso('alertas','aprobar')` (no otorgado por defecto, a diferencia de
+  // `ver`). Usa un operario aislado, no el `operario-e2e` compartido (nota de tasks.md T036).
+  test('alertas: un operario sin "aprobar" (permiso por defecto, solo "ver") no puede actualizar una alerta; con "aprobar" otorgado, sí puede', async () => {
+    const admin = adminSupabaseClient()
+    const { data: perfilAdmin } = await admin
+      .from('usuarios')
+      .select('id, empresa_id')
+      .eq('correo', 'admin-e2e@flotillas.local')
+      .single()
+    const empresaId = perfilAdmin!.empresa_id!
+
+    const sufijo = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const correoOperarioAislado = `operario-rls-t036-${sufijo}@flotillas.local`
+    const { data: authOperario, error: errAuth } = await admin.auth.admin.createUser({
+      email: correoOperarioAislado,
+      password: PASSWORD_PRUEBAS,
+      email_confirm: true
+    })
+    if (errAuth) throw errAuth
+    const { data: perfilOperario } = await admin
+      .from('usuarios')
+      .insert({
+        auth_user_id: authOperario!.user.id,
+        empresa_id: empresaId,
+        nombre: 'Operario RLS T036',
+        correo: correoOperarioAislado,
+        rol: 'operario',
+        activo: true
+      })
+      .select('id')
+      .single()
+
+    const { data: alerta } = await admin
+      .from('alertas')
+      .insert({
+        empresa_id: empresaId,
+        tipo: 'licencia',
+        entidad_tipo: 'conductores',
+        entidad_id: crypto.randomUUID(),
+        fecha_vencimiento: '2026-09-01',
+        estado: 'pendiente'
+      })
+      .select('id')
+      .single()
+
+    const operarioAislado = await clienteAutenticado(correoOperarioAislado)
+
+    // Negativo: solo 'ver' por defecto — bloqueado al intentar resolver.
+    const { data: intentoSinPermiso } = await operarioAislado
+      .from('alertas')
+      .update({ estado: 'resuelta' })
+      .eq('id', alerta!.id)
+      .select()
+    expect(intentoSinPermiso).toEqual([])
+    const { data: sigueIgual } = await admin.from('alertas').select('estado').eq('id', alerta!.id).single()
+    expect(sigueIgual!.estado).toBe('pendiente')
+
+    // Positivo: con 'aprobar' otorgado explícitamente, sí puede.
+    await admin.from('usuario_permisos').insert({
+      empresa_id: empresaId,
+      usuario_id: perfilOperario!.id,
+      modulo_clave: 'alertas',
+      accion: 'aprobar',
+      otorgado_por: perfilOperario!.id
+    })
+    const { data: intentoConPermiso } = await operarioAislado
+      .from('alertas')
+      .update({ estado: 'resuelta' })
+      .eq('id', alerta!.id)
+      .select()
+    expect(intentoConPermiso).not.toEqual([])
+    expect(intentoConPermiso![0].estado).toBe('resuelta')
+
+    await admin.auth.admin.deleteUser(authOperario!.user.id)
+  })
+
+  // T045 de specs/013-reportes/tasks.md (FR-016): los 4 reportes no filtran manualmente por
+  // `empresa_id` en ninguna de sus consultas (useReportes.ts) — confían enteramente en RLS,
+  // igual que el resto del proyecto. Este test siembra una fila en cada una de las 6 tablas de
+  // origen que los reportes leen, en una empresa ajena, y confirma que un usuario de otra
+  // empresa nunca las ve al consultar esas mismas tablas sin filtro (lo que hace cada método de
+  // `useReportes.ts` por dentro).
+  test('reportes: un usuario de otra empresa nunca ve datos de origen de los 4 reportes', async ({ request }) => {
+    const rfc = `T${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).toUpperCase().slice(2, 6)}`
+    const correoAdmin = `admin-rls-reportes-${Date.now()}@flotillas.local`
+
+    const altaRespuesta = await request.post('/api/empresas', {
+      data: {
+        empresa: {
+          nombre: 'Empresa Ajena Reportes RLS',
+          rfc,
+          pais: 'México',
+          moneda: 'MXN',
+          unidad_distancia: 'km',
+          unidad_combustible: 'litros'
+        },
+        administrador: { nombre: 'Admin Ajeno Reportes', correo: correoAdmin }
+      }
+    })
+    expect(altaRespuesta.status()).toBe(201)
+    const { empresa_id: empresaAjenaId } = await altaRespuesta.json()
+
+    const service = adminSupabaseClient()
+    const marcador = `AJENA-${Date.now()}`
+
+    const { data: tipoVehiculo } = await service
+      .from('tipos_vehiculo')
+      .select('id')
+      .eq('empresa_id', empresaAjenaId)
+      .eq('clave', 'ligero')
+      .single()
+    const { data: vehiculo } = await service
+      .from('vehiculos')
+      .insert({
+        empresa_id: empresaAjenaId,
+        marca: marcador,
+        modelo: 'M',
+        placa: marcador,
+        tipo_vehiculo_id: tipoVehiculo!.id,
+        numero_poliza: marcador,
+        fecha_vencimiento_poliza: '2026-12-31'
+      })
+      .select('id')
+      .single()
+    await service
+      .from('conductores')
+      .insert({
+        empresa_id: empresaAjenaId,
+        nombre: marcador,
+        apellidos: marcador,
+        numero_licencia: marcador,
+        tipo_licencia: 'federal',
+        fecha_vencimiento_licencia: '2026-12-31'
+      })
+      .select('id')
+      .single()
+    const { data: proveedor } = await service
+      .from('proveedores')
+      .insert({ empresa_id: empresaAjenaId, nombre: marcador, activo: true })
+      .select('id')
+      .single()
+    const { data: producto } = await service
+      .from('productos')
+      .insert({ empresa_id: empresaAjenaId, nombre: marcador, tipo: 'combustible' })
+      .select('id')
+      .single()
+    const { data: adminAjeno } = await service
+      .from('usuarios')
+      .select('id')
+      .eq('empresa_id', empresaAjenaId)
+      .eq('rol', 'admin')
+      .single()
+
+    await service.from('mantenimientos').insert({
+      empresa_id: empresaAjenaId,
+      vehiculo_id: vehiculo!.id,
+      proveedor_id: proveedor!.id,
+      tipo: 'correctivo',
+      fecha: '2026-08-01',
+      costo_total: 999,
+      creado_por: adminAjeno!.id
+    })
+    await service.from('cargas_combustible').insert({
+      empresa_id: empresaAjenaId,
+      vehiculo_id: vehiculo!.id,
+      proveedor_id: proveedor!.id,
+      producto_id: producto!.id,
+      fecha: '2026-08-01',
+      odometro: 1000,
+      cantidad: 40,
+      costo_total: 800,
+      costo_unitario: 20,
+      creado_por: adminAjeno!.id
+    })
+    await service.from('checklists').insert({
+      empresa_id: empresaAjenaId,
+      vehiculo_id: vehiculo!.id,
+      tipo_vehiculo_id: tipoVehiculo!.id,
+      responsable_id: adminAjeno!.id,
+      fecha: '2026-08-01',
+      resultado: 'aprobado'
+    })
+    await service.from('servicios_obligatorios').insert({
+      empresa_id: empresaAjenaId,
+      vehiculo_id: vehiculo!.id,
+      fecha_realizado: '2026-01-01',
+      fecha_vencimiento: '2026-12-31',
+      tipo: 'revision_fisico_mecanica'
+    })
+
+    const otraEmpresa = await clienteAutenticado('admin-e2e@flotillas.local')
+
+    // Filtra por `vehiculo_id` (uuid único de este test), no por valores numéricos como
+    // `costo_total`/`odometro` — "Empresa E2E" es compartida por toda la suite y ya acumula
+    // filas de otros tests con valores redondos coincidentes; eso daría un falso positivo de
+    // fuga, no uno real.
+    const { data: mantenimientosVistos } = await otraEmpresa
+      .from('mantenimientos')
+      .select('id')
+      .eq('vehiculo_id', vehiculo!.id)
+    expect(mantenimientosVistos).toEqual([])
+
+    const { data: cargasVistas } = await otraEmpresa
+      .from('cargas_combustible')
+      .select('id')
+      .eq('vehiculo_id', vehiculo!.id)
+    expect(cargasVistas).toEqual([])
+
+    const { data: conductoresVistos } = await otraEmpresa.from('conductores').select('id').eq('numero_licencia', marcador)
+    expect(conductoresVistos).toEqual([])
+
+    const { data: vehiculosVistos } = await otraEmpresa.from('vehiculos').select('id').eq('placa', marcador)
+    expect(vehiculosVistos).toEqual([])
+
+    const { data: checklistsVistos } = await otraEmpresa.from('checklists').select('id').eq('vehiculo_id', vehiculo!.id)
+    expect(checklistsVistos).toEqual([])
+
+    const { data: serviciosVistos } = await otraEmpresa
+      .from('servicios_obligatorios')
+      .select('id')
+      .eq('vehiculo_id', vehiculo!.id)
+    expect(serviciosVistos).toEqual([])
+  })
 })
